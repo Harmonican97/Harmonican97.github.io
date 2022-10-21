@@ -55,11 +55,11 @@
 
 						<!-- Work -->
 							<article id="work">
-								<h2 class="major">Work</h2>
+								<h2 class="major">Article</h2>
 								<span class="image main"><img src="images/pic02.jpg" alt="" /></span>
 								<nav>
 									<ul>
-										<li><a href="#bolg1">假设这是第一篇博文的链接1</a></li>
+										<li><a href="#bolg1">b-frame到n-frame坐标转移矩阵求解(欧拉角形式)</a></li>
 										<li>假设这是第二篇博文的链接</li>
 									</ul>
 								</nav>
@@ -112,10 +112,50 @@
 
 						<!-- bolg_1 -->
 							<article id = "bolg1">
-								<h2 class="major">测试博文标题</h2>
-								<span class="image main"><img src="images/test_blog_1.jpg" alt="" /></span>
-								<p>测试博文内容
-								</p>
+								<h2 class="major">b-frame到n-frame坐标转移矩阵求解(欧拉角形式)</h2>
+								<span class="image main"><img src="images/blog1/cover.jpeg" alt="" /></span>
+								<p style="font-size: 20;">Skew-Symmetry(斜对称)矩阵的定义</p>
+								<span class="image main"><img src="images/blog1/pic1.png" alt="" /></span>
+								<p>MATLAB实现</p>
+								<span class="image main"><img src="images/blog1/pic2.png" alt="" /></span>
+								<p style="font-size: 20;">旋转矩阵求解</p>
+								<span class="image main"><img src="images/blog1/pic3.png" alt="" /></span>
+								<span class="image main"><img src="images/blog1/pic4.png" alt="" /></span>
+								<span class="image main"><img src="images/blog1/pic5.png" alt="" /></span>
+								<p>将旋转过程沿x,y,z轴分为三次进行，方向向量分别为[1, 0, 0]<sup>T</sup>，[0, 1, 0]<sup>T</sup>与[0, 0, 1]<sup>T</sup>，角度分别为φ，θ与ψ。由此可得三个旋转矩阵分别如下所示：</p>
+								<span class="image main"><img src="images/blog1/pic6.png" alt="" /></span>
+								<p>则</p>
+								<span class="image main"><img src="images/blog1/pic7.png" alt="" /></span>
+								<span class="image main"><img src="images/blog1/pic8.png" alt="" /></span>
+								<p>展开可得</p>
+								<span class="image main"><img src="images/blog1/pic9.png" alt="" /></span>
+								<p>而</p>
+								<span class="image main"><img src="images/blog1/pic10.png" alt="" /></span>
+								<p>展开可得</p>
+								<span class="image main"><img src="images/blog1/pic11.png" alt="" /></span>
+								<p>同时由于旋转矩阵的正交性，可得</p>
+								<span class="image main"><img src="images/blog1/pic12.png" alt="" /></span>
+								<p>相应的轨迹可由欧拉积分近似得到</p>
+								<span class="image main"><img src="images/blog1/pic13.png" alt="" /></span>
+								<p>在MATLAB中，由欧拉角求得旋转矩阵可使用函数angle2dcm()实现，示例如下</p>
+								<span class="image main"><img src="images/blog1/pic14.png" alt="" /></span>
+								<p>示例结果如下</p>
+								<span class="image main"><img src="images/blog1/pic15.png" alt="" /></span>
+								<p style="font-size: 20;">角速度转移矩阵求解</p>
+								<p>设b-frame下角速度向量为ω<sup>b</sup><sub>nb</sub>=[p, q, r]<sup>T</sup>,而n-frame下欧拉速度矢量(Euler rate vector)为<span style="text-emphasis: circle;">Θ</span>=[<span style="text-emphasis: circle;">φ</span>, <span style="text-emphasis: circle;">θ</span>, <span style="text-emphasis: circle;">ψ</span>]<sup>T</sup>，则可得如下关系</p>
+								<span class="image main"><img src="images/blog1/pic16.png" alt="" /></span>
+								<p>根据上述旋转过程（即分三次计算旋转过程） 则可得</p>
+								<span class="image main"><img src="images/blog1/pic17.png" alt="" /></span>
+								<p>左边展开可得</p>
+								<span class="image main"><img src="images/blog1/pic18.png" alt="" /></span>
+								<p>则欧拉姿态角的变化量（即欧拉速度矢量）为</p>
+								<span class="image main"><img src="images/blog1/pic19.png" alt="" /></span>
+								<p>角速度转移矩阵的MATLAB实现代码如下</p>
+								<span class="image main"><img src="images/blog1/pic20.png" alt="" /></span>
+								<p>总结，6自由度下b-frame到n-frame的转移矩阵计算分为线速度的变化以及角速度的变换，其动力学方程组可表示为向量(矩阵)形式，如下</p>
+								<span class="image main"><img src="images/blog1/pic21.png" alt="" /></span>
+								<p>具体MATLAB代码实现如下</p>
+								<span class="image main"><img src="images/blog1/pic22.png" alt="" /></span>
 							</article>
 
 						<!-- Elements -->
