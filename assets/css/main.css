@@ -69,6 +69,7 @@ input, select, textarea {
 	-moz-appearance: none;
 	-webkit-appearance: none;
 	-ms-appearance: none;
+	-moz-appearance: none;    
 	appearance: none;
 }
 
@@ -1140,9 +1141,12 @@ input, select, textarea {
 			-ms-transition-delay: 0.75s;
 			transition-delay: 0.75s;
 			background-image: linear-gradient(to top, rgba(19, 21, 25, 0.5), rgba(19, 21, 25, 0.5)), url("../../images/overlay.png");
-			background-size: auto, 256px 256px;
-			background-position: center, center;
-			background-repeat: no-repeat, repeat;
+			background-size: auto,
+ 256px 256px;
+			background-position: center,
+ center;
+			background-repeat: no-repeat,
+ repeat;
 			z-index: 2;
 		}
 
@@ -1655,4 +1659,12 @@ input, select, textarea {
 
 		body.is-preload #footer {
 			opacity: 0;
+		}
+
+		h2.major.blog-title-wrap {
+		    width: 100% !important;        /* 强制宽度跟随父容器，而不是跟随文字内容 */
+		    white-space: normal !important; /* 允许文本换行 */
+		    word-wrap: break-word;          /* 允许长单词换行 */
+		    overflow-wrap: break-word;      /* 现代浏览器的换行标准 */
+		    line-height: 1.5;               /* 增加行高，防止换行后文字挤在一起 */
 		}
