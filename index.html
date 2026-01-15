@@ -68,7 +68,8 @@
 								<nav>
 									<ul>
 										<li><a href="#bolg1">b-frame到n-frame坐标转移矩阵求解(欧拉角形式)</a></li>
-										<li><a href="#bolg2">暂时没想好写什么</a></li>
+										<li><a href="#bolg2">基于line of sight with sideway (LOSWS)制导法的AUV路径跟踪</a></li>
+										<li><a href="#bolg_occupy">暂时没想好写什么</a></li>
 									</ul>
 								</nav>
 							</article>
@@ -166,11 +167,55 @@
 								<p>具体MATLAB代码实现如下</p>
 								<span class="image main"><img src="images/blog1/pic22.png" alt="" /></span>
 							</article>
-
+							
 						<!-- bolg2 -->
 							<article id = "bolg2">
+								<h2 class="major">基于line of sight with sideway (LOSWS)制导法的AUV路径跟踪</h2>
+								<div style="text-align: left;"><a href="#work">返回目录</a>    <a href="#bolg_occupy">看看下一篇</a></div>
+								<span class="image main"><img src="images/blog2/cover.jfif" alt="" /></span>
+								<p style="font-size: 25pt;"><b>文章发表在2022 IEEE Bombay Section Signature Conference (IBSSC)</b></p>
+								<p style="font-size: 25pt;"><b>核心思想在于，基于六旋翼AUV的动力学与运动学模型，在视线(line of sight, LOS)制导法的基础上
+									提出了一种新的制导方法。事实上有任意侧向驱动能力的无人系统都可以使用这个制导法，或者在有侧向驱动能力的前提下才有可能使用
+									这种制导方法，整体来讲创新性一般。
+								</b></p>
+								<p style="font-size: 25pt;"><b>LOSWS制导法的流程图如下所示</b></p>
+								<span class="image main"><img src="images/blog2/diagram_losws.png" alt="" /></span>
+								<p style="font-size: 25pt;"><b>可以看到其实就是将航向角、艏向速度与侧向位移解耦分别用两个控制器控制</b></p>
+
+								<p style="font-size: 25pt;"><b>基于LOSWS制导法的路径跟踪示意图如下所示，大致分为三种情况：</b></p>
+								<p style="font-size: 25pt;"><b>1. 被控对象(AUV)在侧向支持区域外</b></p>
+								<span class="image main"><img src="images/blog2/losws_pf_1.png" alt="" /></span>
+								<p style="font-size: 25pt;"><b>2. 被控对象(AUV)在侧向支持区域内</b></p>
+								<span class="image main"><img src="images/blog2/losws_pf_1.png" alt="" /></span>
+								<p style="font-size: 25pt;"><b>3. 航向角与路径方向差距过大</b></p>
+								<span class="image main"><img src="images/blog2/losws_pf_3.png" alt="" /></span>
+								<p style="font-size: 25pt;"><b>By the way, 虽然图中有画出外部扰动，实际在仿真中并没有考虑到扰动问题</b></p>
+
+								<p style="font-size: 25pt;"><b>根据以上设计，在四种路径条件下进行了仿真测试，分别为：
+									1. 直线路径
+									2. 曲线路径(转弯角大于90°)
+									3. 曲线路径(转弯角等于90°)
+									4. 曲线路径(转弯角小于90°)
+								</b></p>
+								<span class="image main"><img src="images/blog2/results_1.png" alt="" /></span>
+								<span class="image main"><img src="images/blog2/results_2.png" alt="" /></span>
+								<span class="image main"><img src="images/blog2/results_3.png" alt="" /></span>
+								<span class="image main"><img src="images/blog2/results_4.png" alt="" /></span>
+
+								<p style="font-size: 25pt;"><b>如果采用直接转向的方式，在某些情况下转向方向可能不是最优路径，如下所示</b></p>
+								<span class="image main"><img src="images/blog2/small_circle.png" alt="" /></span>
+								<p style="font-size: 25pt;"><b>事实上，要解决这个很简单，只要根据最优转向调整一下方向即可，具体请见下图</b></p>
+								<span class="image main"><img src="images/blog2/optimal_steering.png" alt="" /></span>
+								<span class="image main"><img src="images/blog2/optimal_steering_al.png" alt="" /></span>
+
+								<p style="font-size: 25pt;"><b>最终结果的误差量化对比就不看了，没什么意思。<br />
+								如果你对这个方法的源代码感兴趣的话，请联系作者，如果能引用一下这篇文章的话就再好不过了(虽然写的不怎么样)
+								</b></p>
+							</article>
+						<!-- bolg_occupy -->
+							<article id = "bolg_occupy">
 								<h2 class="major">暂时没想好写什么</h2>
-								<div style="text-align: left;"><a href="#bolg1">看看上一篇</a>     <a href="#work">返回目录</a></div>
+								<div style="text-align: left;"><a href="#bolg1">看看第一篇</a>     <a href="#work">返回目录</a></div>
 							</article>
 
 						<!-- Elements -->
