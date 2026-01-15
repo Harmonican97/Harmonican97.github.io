@@ -191,10 +191,8 @@ input, select, textarea {
 
 		h1.major, h2.major, h3.major, h4.major, h5.major, h6.major {
 			border-bottom: solid 1px #ffffff;
-			width: -moz-max-content;
-			width: -webkit-max-content;
-			width: -ms-max-content;
-			width: max-content;
+			/* 修复点：原先是 width: max-content; 导致不换行。改为 100% 即可完美解决 */
+			width: 100%; 
 			padding-bottom: 0.5rem;
 			margin: 0 0 2rem 0;
 		}
@@ -1659,12 +1657,4 @@ input, select, textarea {
 
 		body.is-preload #footer {
 			opacity: 0;
-		}
-
-		h2.major.blog-title-wrap {
-		    width: 100% !important;        /* 强制宽度跟随父容器，而不是跟随文字内容 */
-		    white-space: normal !important; /* 允许文本换行 */
-		    word-wrap: break-word;          /* 允许长单词换行 */
-		    overflow-wrap: break-word;      /* 现代浏览器的换行标准 */
-		    line-height: 1.5;               /* 增加行高，防止换行后文字挤在一起 */
 		}
