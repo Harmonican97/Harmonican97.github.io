@@ -19,9 +19,74 @@
             .blog-text {
                 font-size: 20pt;
             }
+
+			#music-player-container {
+			    position: fixed;
+			    top: 20px;
+			    right: 20px; /* 固定在右上角 */
+			    z-index: 10000; /* 保证在最上层 */
+			    background: rgba(27, 31, 34, 0.85); /* 半透明深色背景 */
+			    padding: 10px 20px;
+			    border-radius: 30px;
+			    border: 1px solid rgba(255, 255, 255, 0.3);
+			    backdrop-filter: blur(5px);
+			    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+			    display: flex;
+			    align-items: center;
+			    transition: opacity 0.3s;
+			}
+
+			#music-info {
+			    color: #fff;
+			    font-size: 0.8rem;
+			    margin-right: 15px;
+			    font-weight: bold;
+			    max-width: 150px;
+			    white-space: nowrap;
+			    overflow: hidden;
+			    text-overflow: ellipsis;
+			    display: inline-block;
+			}
+
+			.player-controls .btns {
+			    display: inline-flex;
+			    gap: 10px;
+			}
+
+			/* 按钮样式重置，适配 Dimension 模板 */
+			#music-player-container button {
+			    background: none;
+			    border: none;
+			    color: #ffffff;
+			    cursor: pointer;
+			    font-size: 1rem;
+			    padding: 0;
+			    margin: 0;
+			    width: auto;
+			    height: auto;
+			    line-height: 1;
+			    box-shadow: none;
+			    transition: color 0.2s;
+			}
+
+			#music-player-container button:hover {
+			    color: #00d2ff; /* 悬停颜色，可根据喜好修改 */
+			}
         </style>
         </head>
     <body class="is-preload">
+
+		<div id="music-player-container">
+		    <div class="player-controls">
+		        <span id="music-info">Loading...</span>
+		        <div class="btns">
+		            <button id="prev-btn" class="icon solid fa-step-backward" title="上一首"></button>
+		            <button id="play-pause-btn" class="icon solid fa-play" title="播放/暂停"></button>
+		            <button id="next-btn" class="icon solid fa-step-forward" title="下一首"></button>
+		        </div>
+		    </div>
+		    <audio id="bg-music"></audio>
+		</div>
 
         <div id="wrapper">
 
@@ -163,7 +228,7 @@
                         <article id = "bolg2">
                                 <h2 class="major blog-title-wrap">基于line of sight with sideway (LOSWS)制导法的AUV路径跟踪</h2>
                                 
-                                <div style="text-align: left;"><a href="#work">返回目录</a>    <a href="#bolg_occupy">看看下一篇</a></div>
+                                <div style="text-align: left;"><a href="#work">返回目录</a>    <a href="#bolg1">看看上一篇</a></div>	<a href="#bolg_occupy">看看下一篇</a></div>
                                 <span class="image main"><img src="images/blog2/cover.jfif" alt="" /></span>
                                 
                                 <p class="blog-text"><b>文章发表在2022 IEEE Bombay Section Signature Conference (IBSSC)</b></p>
@@ -237,6 +302,125 @@
             <script src="assets/js/breakpoints.min.js"></script>
             <script src="assets/js/util.js"></script>
             <script src="assets/js/main.js"></script>
+			<script>
+			    document.addEventListener('DOMContentLoaded', function() {
+			        // ================= 配置区域 =================
+			        // 请在这里填写你 music 文件夹下的具体文件名
+			        const playlist = [
+			            { title: "宫崎骏组曲", file: "music/宫崎骏组曲(Harmonican ver).mp3" },
+			            { title: "大鱼", file: "music/大鱼-JP.mp3" }, 
+			            { title: "告白气球", file: "music/告白气球(Harmonica.ver).mp3" },
+						{ title: "屋上の少女", file: "music/屋上の少女.mp3" },
+						{ title: "MONOCHROME", file: "music/水槽 - MONOCHROME.mp3" },
+						{ title: "如果有你", file: "music/如果有你 - 天狼星口琴乐团.mp3" },
+						{ title: "the truth that you leave", file: "music/the truth that you leave.mp3" },
+						{ title: "HE∀ting Sφul", file: "music/片霧烈火 - HE∀ting Sφul.mp3" },
+						{ title: "群青", file: "music/YOASOBI - 群青.mp3" } 
+			            // 你可以继续添加: { title: "显示名称", file: "music/文件名.mp3" },
+			        ];
+			        // ===========================================
+				
+			        const audio = document.getElementById('bg-music');
+			        const playPauseBtn = document.getElementById('play-pause-btn');
+			        const prevBtn = document.getElementById('prev-btn');
+			        const nextBtn = document.getElementById('next-btn');
+			        const musicInfo = document.getElementById('music-info');
+				
+			        let currentindex = 0;
+			        let isPlaying = false;
+				
+			        // 加载歌曲
+			        function loadSong(index) {
+			            currentindex = index;
+			            audio.src = playlist[currentindex].file;
+			            musicInfo.innerText = playlist[currentindex].title;
+			        }
+				
+			        // 播放
+			        function playSong() {
+			            // 尝试播放
+			            var playPromise = audio.play();
+					
+			            if (playPromise !== undefined) {
+			                playPromise.then(_ => {
+			                    // 播放成功
+			                    isPlaying = true;
+			                    playPauseBtn.classList.remove('fa-play');
+			                    playPauseBtn.classList.add('fa-pause');
+			                })
+			                .catch(error => {
+			                    // 自动播放被浏览器拦截
+			                    console.log("Auto-play blocked, waiting for interaction.");
+			                    isPlaying = false;
+			                    playPauseBtn.classList.remove('fa-pause');
+			                    playPauseBtn.classList.add('fa-play');
+			                });
+			            }
+			        }
+				
+			        // 暂停
+			        function pauseSong() {
+			            audio.pause();
+			            isPlaying = false;
+			            playPauseBtn.classList.remove('fa-pause');
+			            playPauseBtn.classList.add('fa-play');
+			        }
+				
+			        // 切换播放/暂停
+			        playPauseBtn.addEventListener('click', () => {
+			            if (isPlaying) {
+			                pauseSong();
+			            } else {
+			                playSong();
+			            }
+			        });
+				
+			        // 上一首
+			        prevBtn.addEventListener('click', () => {
+			            currentindex--;
+			            if (currentindex < 0) {
+			                currentindex = playlist.length - 1;
+			            }
+			            loadSong(currentindex);
+			            playSong();
+			        });
+				
+			        // 下一首
+			        nextBtn.addEventListener('click', () => {
+			            currentindex++;
+			            if (currentindex > playlist.length - 1) {
+			                currentindex = 0;
+			            }
+			            loadSong(currentindex);
+			            playSong();
+			        });
+				
+			        // 当前歌曲播放完毕自动下一首
+			        audio.addEventListener('ended', () => {
+			            nextBtn.click();
+			        });
+				
+			        // --- 初始化与自动播放逻辑 ---
+				
+			        // 1. 加载第一首歌
+			        if(playlist.length > 0){
+			            loadSong(0);
+			        } else {
+			            musicInfo.innerText = "No Music";
+			        }
+				
+			        // 2. 尝试页面加载后自动播放
+			        playSong();
+				
+			        // 3. 解决浏览器拦截自动播放：
+			        // 如果页面加载时的自动播放失败，用户第一次点击页面任何地方时触发播放
+			        document.body.addEventListener('click', function() {
+			            if (!isPlaying && playlist.length > 0) {
+			                playSong();
+			            }
+			        }, { once: true }); // once: true 表示只执行一次
+			    });
+			</script>
 
     </body>
 </html>
