@@ -104,7 +104,7 @@
                 transform: scale(1.1);
             }
 
-            /* 随机播放激活状态 - 关键修复 */
+            /* 随机播放激活状态 */
             #music-player-container button.active-shuffle {
                 color: #00ff88 !important; /* 强制变绿，覆盖 main.css 的白色 */
                 opacity: 1 !important;
@@ -227,23 +227,24 @@
                                         <li><a href="#bolg1">b-frame到n-frame坐标转移矩阵求解(欧拉角形式)</a></li>
                                         <li><a href="#bolg2">基于line of sight with sideway (LOSWS)制导法的AUV路径跟踪</a></li>
                                         <li><a href="#bolg3">生物启发的脉冲神经网络(SNN)在故障诊断中的应用</a></li>
-                                        <li><a href="#bolg_occupy">暂时没想好写什么</a></li>
+                                        <li><a href="#bolg4">序列卷积神经网络轻量化</a></li>
+                                        <!-- <li><a href="#bolg_occupy">暂时没想好写什么</a></li> -->
                                     </ul>
                                 </nav>
                             </article>
 
                         <article id="about">
-                                <h2 class="major">About</h2>
-                                <span class="image main"><img src="images/about_pic.gif" alt="" /></span>
-                                <p>关于Harmonican：<br />
-                                    一个普通的研究生，目前研究方向是故障诊断与容错控制,<br />
-                                    属性是：音乐宅、重度二次元、无聊的骑行者。<br />
-                                    喜欢的音乐：HE∀ting Sφul、Blue bird、風の谷のナウシカ、紅蓮華等<br />
-                                    喜欢的ACGN：Date a live、Naruto、大图书馆的牧羊人以及Date a live和Strike the blood并列<br />
-                                    喜欢的特摄：奥特曼、假面骑士、铠甲勇士(最近也看了一部超级战队)<br />
-                                    目前坐骑：永久CY-660(其实是想整辆摩托去西藏的)
-                                </p>
-                            </article>
+                            <h2 class="major">About</h2>
+                            <span class="image main"><img src="images/about_pic.gif" alt="" /></span>
+                            <p>关于Harmonican：<br />
+                                一个普通的研究生，目前研究方向是故障诊断与容错控制,<br />
+                                属性是：音乐宅、重度二次元、无聊的骑行者。<br />
+                                喜欢的音乐：HE∀ting Sφul、Blue bird、風の谷のナウシカ、紅蓮華等<br />
+                                喜欢的ACGN：Date a live、Naruto、大图书馆的牧羊人以及Date a live和Strike the blood并列<br />
+                                喜欢的特摄：奥特曼、假面骑士、铠甲勇士(之前也看了一部超级战队)<br />
+                                目前坐骑：<span style="text-decoration: line-through;">永久CY-660(其实是想整辆摩托去西藏的)</span>买了没几个月就坏了，黑心商贩！现在只能采用哈喽或者四轮出行了。
+                            </p>
+                        </article>
 
                         <article id="contact">
                                 <h2 class="major">Contact</h2>
@@ -385,7 +386,7 @@
                             <div style="text-align: left;">
                                 <a href="#work">返回目录</a>&nbsp;&nbsp;
                                 <a href="#bolg2">看看上一篇</a>&nbsp;&nbsp;
-                                <a href="#bolg_occupy">看看下一篇</a>
+                                <a href="#bolg4">看看下一篇</a>
                             </div>
                             <span class="image main"><img src="images/blog3/cover.jpg" alt="" /></span>
 							
@@ -556,6 +557,63 @@
                         
                         </article>
 
+                        <article id="bolg4">
+                            <h2 class="major blog-title-wrap">
+                                将Kolmogorov-Arnold Network融入SeqCNN实现轻量化AUV故障诊断
+                            </h2>
+                        
+                            <div style="text-align: left;">
+                                <a href="#work">返回目录</a>&nbsp;&nbsp;
+                                <a href="#bolg3">看看上一篇</a>&nbsp;&nbsp;
+                                <a href="#bolg_occupy">看看下一篇</a>
+                            </div>
+                            <span class="image main"><img src="images/blog4/cover.jpg" alt="" /></span>
+
+                            <p><b>SCKAN: A Lightweight Model-free Fault Diagnosis Method for Autonomous Underwater Vehicles</b></p>
+                            <p><b>文章发表在2024 WRC Symposium on Advanced Robotics and Automation (WRC SARA)</b></p>
+
+                            <p><b>
+                                核心思想为，利用KAN与Convolutional KAN(CKAN)来替代原始网络(SeqCNN)中的MLP与卷积层。<br>
+                                说实话这个工作挺没意思的，纯粹是老板说要给一个月后举行的会议投个稿临时写出来的。<br>
+                                实现了轻量化不假，总体性能下降的幅度也能够接受，不过创新性实在有限，所以就随便讲讲了。
+                            </b></p>
+
+                            <p><b>
+                                原有的AUV故障诊断模型为SeqCNN，结构如下图所示。说是SeqCNN，其实也就是设计了一个非正方形且横向长度等于通道的卷积核而已。<br>
+                                在最终分类层之前将卷积得到的特征数据与原始数据的统计特征进行融合，随后进行分类层的处理。<br>
+                                事实上，原始方法的创新性也十分有限，不过鉴于是21年的文章，并且也算是这个细分领域十分早期的工作(后续数据集就是随着这项工作出来的)<br>
+                                所以创新性有限也可以理解吧。
+                            </b></p>
+                            <span class="image main"><img src="images/blog4/seqcnn.png" alt="" /></span>
+
+                            <p><b>
+                                KAN的话也就是把MLP的节点学习更换为边的学习，从而实现参数的轻量化。<br>
+                                当然本质上牺牲了一定的性能(原文中给出的结果基本是这样的)，但是参数量确实是大大减少了。<br>
+                                作为基础理论以及为了后续的AI4S的工作来讲，还是很不错的，后来AI4S也确实成了研究热点。<br>
+                                不过拿来当应用工具来看，目前暂时没有什么特别眼前一亮的工作吧。
+                            </b></p>
+                            <span class="image main"><img src="images/blog4/kan.png" alt="" /></span>
+
+                            <p><b>
+                                后续的CKAN实际上也是基于这种“边学习”实现了卷积，具体操作如下所示。<br>
+                                同样，在原始工作中以牺牲部分性能换取轻量化，不过当时看到的时候还是预印，结果看起来不是很吸引人，现在不知道如何了。
+                            </b></p>
+                            <span class="image main"><img src="images/blog4/eq2.png" alt="" /></span>
+                            <span class="image main"><img src="images/blog4/eq3.png" alt="" /></span>
+                            <span class="image main"><img src="images/blog4/eq4.png" alt="" /></span>
+
+                            <p><b>
+                                最后是结果，只能说差强人意吧。参数确实实现了轻量化，性能下降也在接受范围之内。<br>
+                                不过怎么看都感觉这工作没啥意思。
+                            </b></p>
+                            <span class="image main"><img src="images/blog4/results.png" alt="" /></span>
+
+                            <p><b>
+                                最后的最后，如果对源码感兴趣，可以联系作者(我觉得应该没有人感兴趣。。。)，然后不介意的话也可以引用一下。
+                            </b></p>
+
+                        </article>
+
                         <article id = "bolg_occupy">
                                 <h2 class="major">暂时没想好写什么</h2>
                                 <div style="text-align: left;"><a href="#bolg1">看看第一篇</a>     <a href="#work">返回目录</a></div>
@@ -598,7 +656,7 @@
                         { title: "MONOCHROME", file: "music/水槽 - MONOCHROME.mp3" },
                         { title: "如果有你", file: "music/如果有你 - 天狼星口琴乐团.mp3" },
                         { title: "the truth that you leave", file: "music/the truth that you leave.mp3" },
-                        { title: "HE∀ting Sφul", file: "music/片霧烈火 - HE∀ting Soul.mp3" },
+                        { title: "HE∀ting Sφul", file: "music/Heating Soul.mp3" },
                         { title: "群青", file: "music/YOASOBI - 群青.mp3" } 
                     ];
                     // ===========================================
