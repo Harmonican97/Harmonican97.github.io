@@ -280,61 +280,8 @@
                                 </ul>
                             </article>
 
-                        <article id = "bolg1">
-                            <h2 class="major">b-frame到n-frame坐标转移矩阵求解<br />(欧拉角形式)</h2>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div></div>                            
-                                <a href="#work">返回目录</a>                            
-                                <a href="#bolg2">看看下一篇</a>
-                            </div>
-                            <span class="image main"><img src="images/blog1/cover.jpeg" alt="" /></span>
-                            <p><b>Skew-Symmetry(斜对称)矩阵的定义</b></p>
-                            <span class="image main"><img src="images/blog1/pic1.png" alt="" /></span>
-                            <p>MATLAB实现</p>
-                            <span class="image main"><img src="images/blog1/pic2.png" alt="" /></span>
-                            <p><b>旋转矩阵求解</b></p>
-                            <span class="image main"><img src="images/blog1/pic3.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog1/pic4.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog1/pic5.png" alt="" /></span>
-                            <p>将旋转过程沿x,y,z轴分为三次进行，方向向量分别为[1, 0, 0]<sup>T</sup>，[0, 1, 0]<sup>T</sup>与[0, 0, 1]<sup>T</sup>，角度分别为φ，θ与ψ。由此可得三个旋转矩阵分别如下所示：</p>
-                            <span class="image main"><img src="images/blog1/pic6.png" alt="" /></span>
-                            <p>则</p>
-                            <span class="image main"><img src="images/blog1/pic7.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog1/pic8.png" alt="" /></span>
-                            <p>展开可得</p>
-                            <span class="image main"><img src="images/blog1/pic9.png" alt="" /></span>
-                            <p>而</p>
-                            <span class="image main"><img src="images/blog1/pic10.png" alt="" /></span>
-                            <p>展开可得</p>
-                            <span class="image main"><img src="images/blog1/pic11.png" alt="" /></span>
-                            <p>同时由于旋转矩阵的正交性，可得</p>
-                            <span class="image main"><img src="images/blog1/pic12.png" alt="" /></span>
-                            <p>相应的轨迹可由欧拉积分近似得到</p>
-                            <span class="image main"><img src="images/blog1/pic13.png" alt="" /></span>
-                            <p>在MATLAB中，由欧拉角求得旋转矩阵可使用函数angle2dcm()实现，示例如下</p>
-                            <span class="image main"><img src="images/blog1/pic14.png" alt="" /></span>
-                            <p>示例结果如下</p>
-                            <span class="image main"><img src="images/blog1/pic15.png" alt="" /></span>
-                            <p><b>角速度转移矩阵求解</b></p>
-                            <p>设b-frame下角速度向量为ω<sup>b</sup><sub>nb</sub>=[p, q, r]<sup>T</sup>,而n-frame下欧拉速度矢量(Euler rate vector)为<span>Θ</span>=[<span>φ</span>, <span>θ</span>, <span>ψ</span>]<sup>T</sup>，则可得如下关系</p>
-                            <span class="image main"><img src="images/blog1/pic16.png" alt="" /></span>
-                            <p>根据上述旋转过程（即分三次计算旋转过程） 则可得</p>
-                            <span class="image main"><img src="images/blog1/pic17.png" alt="" /></span>
-                            <p>左边展开可得</p>
-                            <span class="image main"><img src="images/blog1/pic18.png" alt="" /></span>
-                            <p>则欧拉姿态角的变化量（即欧拉速度矢量）为</p>
-                            <span class="image main"><img src="images/blog1/pic19.png" alt="" /></span>
-                            <p>角速度转移矩阵的MATLAB实现代码如下</p>
-                            <span class="image main"><img src="images/blog1/pic20.png" alt="" /></span>
-                            <p>总结，6自由度下b-frame到n-frame的转移矩阵计算分为线速度的变化以及角速度的变换，其动力学方程组可表示为向量(矩阵)形式，如下</p>
-                            <span class="image main"><img src="images/blog1/pic21.png" alt="" /></span>
-                            <p>具体MATLAB代码实现如下</p>
-                            <span class="image main"><img src="images/blog1/pic22.png" alt="" /></span>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div></div>                            
-                                <a href="#work">返回目录</a>                            
-                                <a href="#bolg2">看看下一篇</a>
-                            </div>
+                        <article id="bolg1" data-include="articles/blog1.html">
+                            <div class="loading">正在加载文章...</div>
                         </article>
                             
                         <article id="bolg2">
@@ -781,6 +728,47 @@
             <script src="assets/js/breakpoints.min.js"></script>
             <script src="assets/js/util.js"></script>
             <script src="assets/js/main.js"></script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    // 找到所有需要加载外部文件的元素
+                    const articles = document.querySelectorAll('article[data-include]');
+                    
+                    const loadPromises = [];
+            
+                    articles.forEach(article => {
+                        const file = article.getAttribute('data-include');
+                        
+                        // 使用 fetch 请求文件内容
+                        const promise = fetch(file)
+                            .then(response => {
+                                if (!response.ok) throw new Error("无法加载文章");
+                                return response.text();
+                            })
+                            .then(html => {
+                                article.innerHTML = html;
+                            })
+                            .catch(error => {
+                                console.error('加载失败:', error);
+                                article.innerHTML = '<p>加载文章失败，请刷新重试。</p>';
+                            });
+                        
+                        loadPromises.push(promise);
+                    });
+            
+                    // 等所有文章都加载完，再刷新数学公式和模板布局
+                    Promise.all(loadPromises).then(() => {
+                        // 1. 刷新 MathJax 公式
+                        if (window.MathJax) {
+                            MathJax.typesetPromise();
+                        }
+                        
+                        // 2. 这里的模板似乎是 HTML5UP Dimension
+                        // 如果加载后布局高度有问题，可能需要重新触发一次 main.js 的初始化
+                        // 但通常情况下，只要 DOM 结构正确，点击链接时会自动计算高度
+                    });
+                });
+            </script>
+
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
                     // ================= 配置区域 =================
