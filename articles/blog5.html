@@ -1,0 +1,98 @@
+<h2 class="major blog-title-wrap">
+    储备池计算增强的Tube-MPC用于推力损失故障AUV的自愈控制
+</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog4">看看上一篇</a>                                
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
+<span class="image main"><img src="images/blog5/cover.jpg" alt="" /></span>
+
+<p><b>Reservoir Computing-Enhanced Tube-MPC: Real-Time Self-Healing Control for Robust AUV Path Following Under Dynamic Faults</b></p>
+<p><b>文章发表在2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</b></p>
+
+<p><b>还是先来谈谈motivation，为什么用储备池计算(Reservoir Computing, RC)来作为预测模型，RC又是个什么东西。</b></p>
+
+<p><b>
+    RC本质上是一种特殊的循环神经网络(Recurrent Neural Network, RNN)，在它的内部(储备池层)是有Loop连接的状态，而它的输出层与输入层
+    便是普通的线性连接。<br>
+    它的特别之处在于，在完成随机的初始化之后，储备池层的连接便固定了，后续要训练(优化)的只有输出层。<br>
+    从系统层面来讲，它是使用储备池层那种具有“回声”效应的非线性状态来表征另一种非线性状态，所以比较适合用来做非线性系统的回归任务。<br>
+    那么巧了，AUV的模型正好是一种非线性模型，那么用它作为一种数据驱动的模型来代替MPC中的AUV预测模型，不是很合理嘛。<br>
+    同时，它仅需训练线性输出层，这也就意味着它的训练效率很高，甚至可以采用简单的岭回归(Ridge regression)来实现。<br>
+    这也意味着它可以快速地进行在线的重构以适应模型的变化。倘若AUV由于故障发生而导致其模型发生变化，RC便可以实现快速高效的模型重构，从而实现我们想要的自愈控制效果。<br>
+    RC的示意图如下：
+</b></p>
+<span class="image main"><img src="images/blog5/RC.png" alt="" /></span>
+
+<p><b>接下来看看RC的演化方程：</b></p>
+<span class="image main"><img src="images/blog5/eq78.png" alt="" /></span>
+<p><b>
+    怎么样？看着是不是有点眼熟？跟我们的状态空间方程有那么一丝丝神似对吧。<br>
+    如果其中的(1-β)看做是矩阵A，后面的tanh函数映射幻化为矩阵与向量的乘法(也就是矩阵B)，\( W_{out} \)看作是矩阵C，这不就是状态空间方程嘛。<br>
+    当然，这其中并没有什么直接的联系，只是从系统演化的角度来讲是一样的，但是从直觉上来讲，它十分适合用作被控对象的预测模型。
+</b></p>
+
+<p><b>接下来看看它是如何训练(优化)的，我们的优化目标如下：</b></p>
+<span class="image main"><img src="images/blog5/eq9.png" alt="" /></span>
+<p><b>那么便可以给出解析解：</b></p>
+<span class="image main"><img src="images/blog5/eq10.png" alt="" /></span>
+<p><b>很棒！相比反向传播不知道快到哪里去了，当然这是建立在只需优化输出层，而反向传播的目标是整个网络的每一层。</b></p>
+
+<p><b>很好，现在我们大致知道了RC是个什么样的东西，以及它为什么可以作为被控对象的预测模型放在MPC中，那么接下来就开始设计控制器吧。</b></p>
+<p><b>首先，为了让我们的模型更具有噪声鲁棒性，来加一个卡尔曼滤波器吧(基操)。首先把RC改为非线性状态空间方程的形式(这个我们之前已经通过既视感感受过了，并不是什么难事)，改写上面的公式(7)(8)</b></p>
+<span class="image main"><img src="images/blog5/eq11-12.png" alt="" /></span>
+<p><b>\(q\)和\(v\)分别是处理噪声与测量噪声，那么预测和矫正分别就是：</b></p>
+<span class="image main"><img src="images/blog5/eq13.png" alt="" /></span>
+<span class="image main"><img src="images/blog5/eq15-18.png" alt="" /></span>
+<p><b>接下来给定Tube-MPC的名义模型以及相应的状态反馈控制系数K：</b></p>
+<span class="image main"><img src="images/blog5/eq21.png" alt="" /></span>
+<span class="image main"><img src="images/blog5/eq22.png" alt="" /></span>
+<p><b>并且将优化目标设置为：</b></p>
+<span class="image main"><img src="images/blog5/eq25.png" alt="" /></span>
+<p><b>那么实际的控制律就为：</b></p>
+<span class="image main"><img src="images/blog5/eq26.png" alt="" /></span>
+<p><b>
+    当然，实际的设计过程更为复杂(控制理论你懂的)，但是限于文章的篇幅，仅做了相关必要的解释。<br>
+    关于误差动力学以及稳定性证明在原文中有给出，当然也是精简过的，这里不再赘述，有兴趣可以查看原文。<br>
+    PS: 有时候真的不想讲公式推导。。。
+</b></p>
+
+<p><b>
+    然后是关于验证，这里采用了一种四旋翼式AUV来进行验证，这种AUV的模型类似于常见的UAV，所以本方案同样适用于UAV的自愈控制。<br>故障设置的方法采用故障因子的引入，即：将推力输出乘上一个系数，使得输出推力小于设定推力，从而实现对推进器故障的模拟。
+</b></p>
+<p><b>
+    具体的对比方案如下，大致采取了使用神经网络(Neural Network, NN)与高斯过程(Gaussian process, GP)来作为预测模型。<br>
+    同样也采取了原始的NMPC与Tube-MPC来作为baseline。具体结果如下所示：
+</b></p>
+<span class="image main"><img src="images/blog5/results1.png" alt="" /></span>
+<span class="image main"><img src="images/blog5/results2.png" alt="" /></span>
+<p><b>蓝色部分表示正常状态，黄色表示故障发生，绿色表示修复之后(即预测模型重构之后)，可以看到提出的方法修复效果很好。</b></p>
+
+<p><b>那么再来看看量化结果吧：</b></p>
+<span class="image main"><img src="images/blog5/tab1.png" alt="" /></span>
+<p><b>
+    量化结果结果除了跟踪误差，还加上了每次进行控制的时间以及模型学习(重构)的时间，可以看到在不同的数据驱动预测模型中，基于RC的方法不仅实现了最少的控制律应用时间，在模型学习时间上更是小了一个数量级，同时跟踪误差也是最小的。<br>
+    PS: 哇，全方面碾压是不是不太好。
+</b></p>
+
+<p><b>最后来看看不同故障等级对控制效果的影响，首先是不同故障等级的对比：</b></p>
+<span class="image main"><img src="images/blog5/results3.png" alt="" /></span>
+
+<p><b>这边故障因子最低只设置到了0.4，即输出推力只有设定推力的40%，属于严重的推进器故障了。</b></p>
+<p><b>只设置到0.4的原因在于，在故障因子更低(即输出推力更低，故障更严重)的情况下，几乎所有方法最后都无法实现收敛，当然，除了提出的方法。</b></p>
+<span class="image main"><img src="images/blog5/results4.png" alt="" /></span>
+
+<p><b>在经过预测模型重构(自愈)之后，运动路径再次回到了参考路径上。</b></p>
+
+<p><b>
+    以上就是这篇文章的全部内容，综合来讲，创新性还可以，引入了一个非常小众的体系(RC)到MPC中，也通过数学推导证明了稳定性，毕竟是控制理论嘛，这方面更重要一些。<br>
+    如果你对源代码感兴趣的话请联系作者，如果能引用一下的话那就再好不过啦。
+</b></p>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog4">看看上一篇</a>                                
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>

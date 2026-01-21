@@ -215,27 +215,27 @@
                 <div id="main">
 
                         <article id="intro">
-                                <h2 class="major">Intro</h2>
-                                <span class="image main"><img src="images/intro_pic.jpeg" alt="梅林(考哥)" /></span>
-                                <p>这个博客做出来只是兴趣使然，明明有很多工作要做，但还是要搞这些花里胡哨的东西。</p>
-                                <p>文章部分应该是更新有关科研的内容，也有可能是自己感兴趣的一些工程内容，具体情况看心情。&#128512</p>
-                                <p>总而言之，来看看<a href="#work">文章</a>吧</p>
-                            </article>
+                            <h2 class="major">Intro</h2>
+                            <span class="image main"><img src="images/intro_pic.jpeg" alt="梅林(考哥)" /></span>
+                            <p>这个博客做出来只是兴趣使然，明明有很多工作要做，但还是要搞这些花里胡哨的东西。</p>
+                            <p>文章部分应该是更新有关科研的内容，也有可能是自己感兴趣的一些工程内容，具体情况看心情。&#128512</p>
+                            <p>总而言之，来看看<a href="#work">文章</a>吧</p>
+                        </article>
 
                         <article id="work">
-                                <h2 class="major">Article</h2>
-                                <span class="image main"><img src="images/article_pic.png" alt="梅林(川澄)" /></span>
-                                <nav>
-                                    <ul>
-                                        <li><a href="#blog1">b-frame到n-frame坐标转移矩阵求解(欧拉角形式)</a></li>
-                                        <li><a href="#blog2">基于line of sight with sideway (LOSWS)制导法的AUV路径跟踪</a></li>
-                                        <li><a href="#blog3">生物启发的脉冲神经网络(SNN)在故障诊断中的应用</a></li>
-                                        <li><a href="#blog4">序列卷积神经网络轻量化</a></li>
-                                        <li><a href="#blog5">基于储备池计算的Tube-MPC用于AUV自愈控制</a></li>
-                                        <!-- <li><a href="#bolg_occupy">暂时没想好写什么</a></li> -->
-                                    </ul>
-                                </nav>
-                            </article>
+                            <h2 class="major">Article</h2>
+                            <span class="image main"><img src="images/article_pic.png" alt="梅林(川澄)" /></span>
+                            <nav>
+                                <ul>
+                                    <li><a href="#blog1">b-frame到n-frame坐标转移矩阵求解(欧拉角形式)</a></li>
+                                    <li><a href="#blog2">基于line of sight with sideway (LOSWS)制导法的AUV路径跟踪</a></li>
+                                    <li><a href="#blog3">生物启发的脉冲神经网络(SNN)在故障诊断中的应用</a></li>
+                                    <li><a href="#blog4">序列卷积神经网络轻量化</a></li>
+                                    <li><a href="#blog5">基于储备池计算的Tube-MPC用于AUV自愈控制</a></li>
+                                    <!-- <li><a href="#bolg_occupy">暂时没想好写什么</a></li> -->
+                                </ul>
+                            </nav>
+                        </article>
 
                         <article id="about">
                             <h2 class="major">About</h2>
@@ -278,419 +278,26 @@
                                     <li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
                                     <li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
                                 </ul>
-                            </article>
+                        </article>
 
                         <article id="blog1" data-include="articles/blog1.html">
                             <div class="loading">正在加载文章...</div>
                         </article>
-                            
-                        <article id="blog2">
-                            <h2 class="major blog-title-wrap">
-                                基于line of sight with sideway (LOSWS)制导法的AUV路径跟踪
-                            </h2>
-                        
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog1">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>                                
-                                <a href="#blog3">看看下一篇</a>
-                            </div>
-                        
-                            <span class="image main"><img src="images/blog2/cover.jfif" alt="" /></span>
-                        
-                            <p><b>A new path following method of AUV using line-of-sight with sideway</b></p>
-							<p><b>文章发表在2022 IEEE Bombay Section Signature Conference (IBSSC)</b></p>
-                            <p><b>核心思想在于，基于六旋翼AUV的动力学与运动学模型，在视线(line of sight, LOS)制导法的基础上
-                                提出了一种新的制导方法。事实上有任意侧向驱动能力的无人系统都可以使用这个制导法，或者在有侧向驱动能力的前提下才有可能使用
-                                这种制导方法，整体来讲创新性一般。
-                            </b></p>
-                            <p><b>LOSWS制导法的流程图如下所示</b></p>
-                            <span class="image main"><img src="images/blog2/diagram_losws.png" alt="" /></span>
-                            <p><b>可以看到其实就是将航向角、艏向速度与侧向位移解耦分别用两个控制器控制</b></p>
-                        
-                            <p><b>基于LOSWS制导法的路径跟踪示意图如下所示，大致分为三种情况：</b></p>
-                            <p><b>1. 被控对象(AUV)在侧向支持区域外</b></p>
-                            <span class="image main"><img src="images/blog2/losws_pf_1.png" alt="" /></span>
-                            <p><b>2. 被控对象(AUV)在侧向支持区域内</b></p>
-                            <span class="image main"><img src="images/blog2/losws_pf_1.png" alt="" /></span>
-                            <p><b>3. 航向角与路径方向差距过大</b></p>
-                            <span class="image main"><img src="images/blog2/losws_pf_3.png" alt="" /></span>
-                            <p><b>By the way, 虽然图中有画出外部扰动，实际在仿真中并没有考虑到扰动问题</b></p>
-                        
-                            <p><b>根据以上设计，在四种路径条件下进行了仿真测试，分别为：<br>
-                                1. 直线路径<br>
-                                2. 曲线路径(转弯角大于90°)<br>
-                                3. 曲线路径(转弯角等于90°)<br>
-                                4. 曲线路径(转弯角小于90°)
-                            </b></p>
-                            <span class="image main"><img src="images/blog2/results_1.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog2/results_2.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog2/results_3.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog2/results_4.png" alt="" /></span>
-                        
-                            <p><b>如果采用直接转向的方式，在某些情况下转向方向可能不是最优路径，如下所示</b></p>
-                            <span class="image main"><img src="images/blog2/small_circle.png" alt="" /></span>
-                            <p><b>事实上，要解决这个很简单，只要根据最优转向调整一下方向即可，具体请见下图</b></p>
-                            <span class="image main"><img src="images/blog2/optimal_steering.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog2/optimal_steering_al.png" alt="" /></span>
-                        
-                            <p><b>最终结果的误差量化对比就不看了，没什么意思。<br />
-                            如果你对这个方法的源代码感兴趣的话，请联系作者，如果能引用一下这篇文章的话就再好不过了(虽然写的不怎么样)
-                            </b></p>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog1">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>                                
-                                <a href="#blog3">看看下一篇</a>
-                            </div>
-                        </article>
-                            
-                        <article id="blog3">
-                            <h2 class="major blog-title-wrap">
-                                生物启发的脉冲神经网络(Spike Neural Network, SNN)在故障诊断中的应用
-                            </h2>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog2">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>
-                                <a href="#blog4">看看下一篇</a>
-                            </div>
 
-                            <span class="image main"><img src="images/blog3/cover.jpg" alt="" /></span>
-							
-							<p><b>Online Fault Diagnosis Using Bioinspired Spike Neural Network</b></p>
-                            <p><b>文章发表在IEEE Transactions on Industrial Informatics ( Volume: 20, Issue: 9, September 2024)</b></p>
-                        
-                            <p><b>先谈谈motivation，为什么要用SNN来做这件事呢？
-                                首先，在故障诊断的过程中(尤其是实际场景中)，工况很可能是不断变化的，至少工况和在实验室中的工况有所不同，
-                                这就意味着在实验室条件下训练得到的数据驱动模型在实际场景中就失效了。<br>
-                                那么，为了解决这类问题，基于迁移学习(Transfer Learning)做了许多跨数据域(cross data domain)的故障诊断方法，
-                                包括但不限于Mapping，Model parameter transfer等等。<br>
-                                但是问题又来了，这些方法都要求，在实际场景(或者说是新的工况下)获取一些新的数据，对现有模型进行微调(Fine tune)。
-                                虽然数据量不是很多，但是也加入了一个重训练的过程。<br>
-                                那么，有没有可能跳过这个重训练，去实现一个网络的在线学习呢？答案便是采用脉冲时间依赖可塑性学习法则。<br>
-                                基于这种仿生的学习法则，也就采取了仿生的SNN这种框架，具体实现过程如下：
-                            </b></p>
-                        
-                            <p><b>先来看看整体框架，大致可以分为三大块：<br>
-                            1. 数据编码模块
-                            2. 脉冲信号处理模块
-                            3. 最终分类模块<br>
-                            <br>
-                            其中脉冲信号处理部分，也就是SNN的主体，引入了脉冲时间依赖可塑性(Spike Timing-Dependent Plasticity, STDP)，
-                            神经元的膜电位抑制以及膜电位阈值平衡机制。
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/overview.png" alt="" /></span>
-                        
-                            <p><b>
-                                那么开始进入第一个模块，脉冲编码模块。<br>
-                                可以看到脉冲编码主要分为三个部分，梅尔语谱图计算、归一化以及泊松脉冲编码。
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/encoding.png" alt="" /></span>
-                        
-                            <p><b>
-                                首先是梅尔语谱图计算，这个操作是利用梅尔滤波器组对原始信号进行处理，将一维的振动信号转换为二维的时频信号<br>
-                                一方面进行了特征的提取，另一方面还实现了对噪声的抑制。<br>
-                                通过对滤波器组的设计，将我们不关心的那些噪声信号进行滤除，同时也增强了时频域的特征。
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/filter_bank.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/eq1.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/eq2.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/eq3.png" alt="" /></span>
-                        
-                            <p><b>
-                                其次是归一化，这个简单，具体操作直接略过，为的是服务后续的泊松脉冲编码<br>
-                            </b></p>
-                        
-                            <p><b>
-                                最后是泊松脉冲编码，这是一种频率脉冲编码，核心思想在于将原本的脉冲激发率转换为激发概率。<br>
-                                简单来讲，原本的频率编码是将数值直接转换为激发率，例如：数值为0.5，若脉冲序列长度为1s，则激发频率设置为50Hz，
-                                也就是在1s内激发出50个脉冲，若数值为0.3，则设置为30Hz，1s内激发出30个脉冲；<br>
-                                而泊松脉冲编码的情况则是，例如：数值为0.5，假设最大激发率为100Hz(或者说将激发的基本周期设置为10ms)，
-                                则将激发概率设置为50%，那么1s内的激发次数则接近于50次(可能多，可能少)。<br>
-                                这么做将确定的频率转换为激发频率的概率，一定程度上增强了信号的鲁棒性。
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/eq4.png" alt="" /></span>
-                        
-                            <p><b>
-                                接下来是SNN主体部分，这部分主要分为神经元模型、突触模型以及学习法则(STDP)<br>
-                            </b></p>
-                        
-                            <p><b>
-                                首先是神经元模型，采用带抑制信号的LIF模型，具体膜电位动力学模型如下<br>
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/eq567.png" alt="" /></span>
-                            <p><b>
-                                大致动力学行为就是，如果没有激励，则膜电位慢慢泄露(衰退)，有激励则增长一些，增长的数值与突触电导相关，
-                                相应的，有抑制则下降。在膜电位达到阈值时，神经元会发射脉冲，并且电位回到静息电位。<br>
-                            </b></p>
-                        
-                            <p><b>
-                                其次是突触模型，突触的自我演化带有一个缓慢的衰退，具体的变化需要看STDP的在线更新。<br>
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/eq8.png" alt="" /></span>
-                        
-                            <p><b>
-                                然后是STDP，首先明确STDP想做的是什么。其实就是一个根据脉冲激发时间的奖励。<br>
-                                如果突触前脉冲先于后脉冲到达，这就意味着这种模式的信号是符合常理的。<br>
-                                打个比方，你妈喊你吃饭，
-                                然后你去吃饭了，证明“你妈喊你吃饭”这个行为对“你去吃饭”这个行为是有正向指导作用的，那么对于这种情况就应该肯定，
-                                也就是给予奖励；<br>
-                                但是如果在你妈喊你吃饭之前你就已经把饭吃完了，或者在吃饭了，这意味着“你妈喊你吃饭”这个行为对“你去吃饭”这个行为
-                                没有正向指导作用，那么这两件事之间的联系就应该削弱，也就是给予惩罚。<br>
-                                具体可以参看下面的图片。
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/stdp.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/eq9.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/eq10.png" alt="" /></span>
-                        
-                            <p><b>
-                                然而现在遇到了另一个问题，如果要将其运用到SNN中，我们不可能将所有的脉冲到达时间全部记录，然后再进行突触的更新，
-                                一方面这很不效率，另一方面这件事做起来也不现实。<br>
-                                为此，采用了“迹”的方法来实现STDP的更新，具体请看公式：
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/eq11.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/eq12.png" alt="" /></span>
-                        
-                            <p><b>
-                                随后讲到另一个概念，横向抑制，这又是怎么回事呢？<br>
-                                其实很简单，在某一个神经元的某个突触学到模式之后，向其他神经元发送一个抑制信号，并进入不应期，
-                                这个概念从学术上来讲就是Winner-Takes-All(WTA)，赢者通吃；<br>
-                                如果从游戏上来讲就是，“让我独享经验”或者“一人我吃三路”，当然这不一定是一件坏事，因为我们不需要所有神经元突触
-                                都去学习者一种模式，某个神经元突触的集中学习是一件好事。
-                            </b></p>
-                        
-                            <p><b>
-                                那么膜电位阈值平衡机制又是怎么回事呢？<br>
-                                让我们来设想一个场景，假设某个神经元突触一直在学习，那么它就会变得无比“粗壮”，也就是说，
-                                随便来一个激励就会激发这个神经元，然后WTA会让他独享经验，最后造成的结果就是，
-                                只有他在学习，其他神经元无法学习了。<br>
-                                这是一定要避免的，虽然要集中学习，但是不能抢占所有的学习机会，于是我们规定：<br>
-                                如果你近期学习过一次，那么你的激发阈值便增加一些，在后续的过程中不那么容易激发，
-                                也就是不那么容易学习了。<br>
-                                具体动力学行为请参考下列公式：
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/eq13.png" alt="" /></span>
-                        
-                            <p><b>
-                                从直觉上来看，以上两个行为是矛盾的，一边让你集中学习，一边又让你不那么容易一直学习。<br>
-                                但是最终两者会达到一个动态平衡，使整体SNN慢慢优化到一个合适的状态。									
-                            </b></p>
-                        
-                            <p><b>
-                                那么综上所述，从直觉上来讲，STDP好像是work的，那么事实上呢？请看后面的结果。<br>
-                            </b></p>
-                        
-                            <p><b>
-                                具体在两个数据集上进行测试，一个是CWRU，一个是MFPT。直接来看结果：<br>
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/cwru.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/mfpt1.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/mfpt2.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/comp1.png" alt="" /></span>
-                        
-                            <p><b>
-                                可以看到效果还是不错的，在横向对比中虽然不是最佳，但是也处于前列。<br>
-                                当然这不涉及变工况，接下来让我们看看变工况下的效果如何：
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/pwc.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/comp2.png" alt="" /></span>
-                            <p><b>
-                                效果最佳，没毛病，而且可以看到，相应的工况变化其实对我们提出的方法并无大的影响。
-                            </b></p>
-                        
-                            <p><b>
-                                然后来瞧瞧横向抑制与膜电位阈值平衡机制的影响。
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/homo_com.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog3/inhi_com.png" alt="" /></span>
-                            <p><b>
-                                可以明显的看到，如果没有平衡机制，特征聚类的效果明显变差，而没有横向抑制的情况下，根本无章法可言。<br>
-                                这个故事告诉我们，打游戏不能太毒，要学会把球传给队友，光自己发育好没用啊！
-                            </b></p>
-                        
-                            <p><b>
-                                最后来看看对噪声的抵抗效果，之前讲过，不论是梅尔滤波器组还是泊松编码，都对噪声有一定鲁棒性，那么实际上呢？
-                            </b></p>
-                            <span class="image main"><img src="images/blog3/snr.png" alt="" /></span>
-                            <p><b>
-                                可以看到，即便是SNR=0dB的情况下，仍然达到了85%左右的准确率，这个效果还是不错的(应该吧？)，
-                                总之，对噪声鲁棒性还是可以的。
-                            </b></p>
-                        
-                            <p><b>
-                                以上就是这篇文章的全部内容，总体来讲创新性还不错，就是SNN的话题度还是不是很广啊。<br>
-                                如果你对源代码感兴趣的话请联系作者，如果能引用一下的话那就再好不过啦。
-                            </b></p>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog2">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>
-                                <a href="#blog4">看看下一篇</a>
-                            </div>
+                        <article id="blog2" data-include="articles/blog2.html">
+                            <div class="loading">正在加载文章...</div>
                         </article>
 
-                        <article id="blog4">
-                            <h2 class="major blog-title-wrap">
-                                将Kolmogorov-Arnold Network融入SeqCNN实现轻量化AUV故障诊断
-                            </h2>
-                        
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog3">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>
-                                <a href="#blog5">看看下一篇</a>
-                            </div>
-                            <span class="image main"><img src="images/blog4/cover.jpg" alt="" /></span>
-
-                            <p><b>SCKAN: A Lightweight Model-free Fault Diagnosis Method for Autonomous Underwater Vehicles</b></p>
-                            <p><b>文章发表在2024 WRC Symposium on Advanced Robotics and Automation (WRC SARA)</b></p>
-
-                            <p><b>
-                                核心思想为，利用KAN与Convolutional KAN(CKAN)来替代原始网络(SeqCNN)中的MLP与卷积层。<br>
-                                说实话这个工作挺没意思的，纯粹是老板说要给一个月后举行的会议投个稿临时写出来的。<br>
-                                实现了轻量化不假，总体性能下降的幅度也能够接受，不过创新性实在有限，所以就随便讲讲了。
-                            </b></p>
-
-                            <p><b>
-                                原有的AUV故障诊断模型为SeqCNN，结构如下图所示。说是SeqCNN，其实也就是设计了一个非正方形且横向长度等于通道的卷积核而已。<br>
-                                在最终分类层之前将卷积得到的特征数据与原始数据的统计特征进行融合，随后进行分类层的处理。<br>
-                                事实上，原始方法的创新性也十分有限，不过鉴于是21年的文章，并且也算是这个细分领域十分早期的工作(后续数据集就是随着这项工作出来的)<br>
-                                所以创新性有限也可以理解吧。
-                            </b></p>
-                            <span class="image main"><img src="images/blog4/seqcnn.png" alt="" /></span>
-
-                            <p><b>
-                                KAN的话也就是把MLP的边学习更换为节点的学习，从而实现参数的轻量化。<br>
-                                当然本质上牺牲了一定的性能(原文中给出的结果基本是这样的)，但是参数量确实是大大减少了。<br>
-                                作为基础理论以及为了后续的AI4S的工作来讲，还是很不错的，后来AI4S也确实成了研究热点。<br>
-                                不过拿来当应用工具来看，目前暂时没有什么特别眼前一亮的工作吧。
-                            </b></p>
-                            <span class="image main"><img src="images/blog4/kan.png" alt="" /></span>
-
-                            <p><b>
-                                后续的CKAN实际上也是基于这种“节点学习”实现了卷积，具体操作如下所示。<br>
-                                同样，在原始工作中以牺牲部分性能换取轻量化，不过当时看到的时候还是预印，结果看起来不是很吸引人，现在不知道如何了。
-                            </b></p>
-                            <span class="image main"><img src="images/blog4/eq2.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog4/eq3.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog4/eq4.png" alt="" /></span>
-
-                            <p><b>
-                                最后是结果，只能说差强人意吧。参数确实实现了轻量化，性能下降也在接受范围之内。<br>
-                                不过怎么看都感觉这工作没啥意思。
-                            </b></p>
-                            <span class="image main"><img src="images/blog4/results.png" alt="" /></span>
-
-                            <p><b>
-                                最后的最后，如果对源码感兴趣，可以联系作者(我觉得应该没有人感兴趣。。。)，然后不介意的话也可以引用一下。
-                            </b></p>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog3">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>
-                                <a href="#blog5">看看下一篇</a>
-                            </div>
-
+                        <article id="blog3" data-include="articles/blog3.html">
+                            <div class="loading">正在加载文章...</div>
                         </article>
 
-                        <article id="blog5">
-                            <h2 class="major blog-title-wrap">
-                                储备池计算增强的Tube-MPC用于推力损失故障AUV的自愈控制
-                            </h2>
-                        
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog4">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>
-                                <a href="#blog_occupy">看看下一篇</a>
-                            </div>
-                            <span class="image main"><img src="images/blog5/cover.jpg" alt="" /></span>
+                        <article id="blog4" data-include="articles/blog4.html">
+                            <div class="loading">正在加载文章...</div>
+                        </article>
 
-                            <p><b>Reservoir Computing-Enhanced Tube-MPC: Real-Time Self-Healing Control for Robust AUV Path Following Under Dynamic Faults</b></p>
-                            <p><b>文章发表在2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</b></p>
-
-                            <p><b>还是先来谈谈motivation，为什么用储备池计算(Reservoir Computing, RC)来作为预测模型，RC又是个什么东西。</b></p>
-
-                            <p><b>
-                                RC本质上是一种特殊的循环神经网络(Recurrent Neural Network, RNN)，在它的内部(储备池层)是有Loop连接的状态，而它的输出层与输入层
-                                便是普通的线性连接。<br>
-                                它的特别之处在于，在完成随机的初始化之后，储备池层的连接便固定了，后续要训练(优化)的只有输出层。<br>
-                                从系统层面来讲，它是使用储备池层那种具有“回声”效应的非线性状态来表征另一种非线性状态，所以比较适合用来做非线性系统的回归任务。<br>
-                                那么巧了，AUV的模型正好是一种非线性模型，那么用它作为一种数据驱动的模型来代替MPC中的AUV预测模型，不是很合理嘛。<br>
-                                同时，它仅需训练线性输出层，这也就意味着它的训练效率很高，甚至可以采用简单的岭回归(Ridge regression)来实现。<br>
-                                这也意味着它可以快速地进行在线的重构以适应模型的变化。倘若AUV由于故障发生而导致其模型发生变化，RC便可以实现快速高效的模型重构，从而实现我们想要的自愈控制效果。<br>
-                                RC的示意图如下：
-                            </b></p>
-                            <span class="image main"><img src="images/blog5/RC.png" alt="" /></span>
-
-                            <p><b>接下来看看RC的演化方程：</b></p>
-                            <span class="image main"><img src="images/blog5/eq78.png" alt="" /></span>
-                            <p><b>
-                                怎么样？看着是不是有点眼熟？跟我们的状态空间方程有那么一丝丝神似对吧。<br>
-                                如果其中的(1-β)看做是矩阵A，后面的tanh函数映射幻化为矩阵与向量的乘法(也就是矩阵B)，\( W_{out} \)看作是矩阵C，这不就是状态空间方程嘛。<br>
-                                当然，这其中并没有什么直接的联系，只是从系统演化的角度来讲是一样的，但是从直觉上来讲，它十分适合用作被控对象的预测模型。
-                            </b></p>
-
-                            <p><b>接下来看看它是如何训练(优化)的，我们的优化目标如下：</b></p>
-                            <span class="image main"><img src="images/blog5/eq9.png" alt="" /></span>
-                            <p><b>那么便可以给出解析解：</b></p>
-                            <span class="image main"><img src="images/blog5/eq10.png" alt="" /></span>
-                            <p><b>很棒！相比反向传播不知道快到哪里去了，当然这是建立在只需优化输出层，而反向传播的目标是整个网络的每一层。</b></p>
-
-                            <p><b>很好，现在我们大致知道了RC是个什么样的东西，以及它为什么可以作为被控对象的预测模型放在MPC中，那么接下来就开始设计控制器吧。</b></p>
-                            <p><b>首先，为了让我们的模型更具有噪声鲁棒性，来加一个卡尔曼滤波器吧(基操)。首先把RC改为非线性状态空间方程的形式(这个我们之前已经通过既视感感受过了，并不是什么难事)，改写上面的公式(7)(8)</b></p>
-                            <span class="image main"><img src="images/blog5/eq11-12.png" alt="" /></span>
-                            <p><b>\(q\)和\(v\)分别是处理噪声与测量噪声，那么预测和矫正分别就是：</b></p>
-                            <span class="image main"><img src="images/blog5/eq13.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog5/eq15-18.png" alt="" /></span>
-                            <p><b>接下来给定Tube-MPC的名义模型以及相应的状态反馈控制系数K：</b></p>
-                            <span class="image main"><img src="images/blog5/eq21.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog5/eq22.png" alt="" /></span>
-                            <p><b>并且将优化目标设置为：</b></p>
-                            <span class="image main"><img src="images/blog5/eq25.png" alt="" /></span>
-                            <p><b>那么实际的控制律就为：</b></p>
-                            <span class="image main"><img src="images/blog5/eq26.png" alt="" /></span>
-                            <p><b>
-                                当然，实际的设计过程更为复杂(控制理论你懂的)，但是限于文章的篇幅，仅做了相关必要的解释。<br>
-                                关于误差动力学以及稳定性证明在原文中有给出，当然也是精简过的，这里不再赘述，有兴趣可以查看原文。<br>
-                                PS: 有时候真的不想讲公式推导。。。
-                            </b></p>
-
-                            <p><b>
-                                然后是关于验证，这里采用了一种四旋翼式AUV来进行验证，这种AUV的模型类似于常见的UAV，所以本方案同样适用于UAV的自愈控制。<br>故障设置的方法采用故障因子的引入，即：将推力输出乘上一个系数，使得输出推力小于设定推力，从而实现对推进器故障的模拟。
-                            </b></p>
-                            <p><b>
-                                具体的对比方案如下，大致采取了使用神经网络(Neural Network, NN)与高斯过程(Gaussian process, GP)来作为预测模型。<br>
-                                同样也采取了原始的NMPC与Tube-MPC来作为baseline。具体结果如下所示：
-                            </b></p>
-                            <span class="image main"><img src="images/blog5/results1.png" alt="" /></span>
-                            <span class="image main"><img src="images/blog5/results2.png" alt="" /></span>
-                            <p><b>蓝色部分表示正常状态，黄色表示故障发生，绿色表示修复之后(即预测模型重构之后)，可以看到提出的方法修复效果很好。</b></p>
-
-                            <p><b>那么再来看看量化结果吧：</b></p>
-                            <span class="image main"><img src="images/blog5/tab1.png" alt="" /></span>
-                            <p><b>
-                                量化结果结果除了跟踪误差，还加上了每次进行控制的时间以及模型学习(重构)的时间，可以看到在不同的数据驱动预测模型中，基于RC的方法不仅实现了最少的控制律应用时间，在模型学习时间上更是小了一个数量级，同时跟踪误差也是最小的。<br>
-                                PS: 哇，全方面碾压是不是不太好。
-                            </b></p>
-
-                            <p><b>最后来看看不同故障等级对控制效果的影响，首先是不同故障等级的对比：</b></p>
-                            <span class="image main"><img src="images/blog5/results3.png" alt="" /></span>
-
-                            <p><b>这边故障因子最低只设置到了0.4，即输出推力只有设定推力的40%，属于严重的推进器故障了。</b></p>
-                            <p><b>只设置到0.4的原因在于，在故障因子更低(即输出推力更低，故障更严重)的情况下，几乎所有方法最后都无法实现收敛，当然，除了提出的方法。</b></p>
-                            <span class="image main"><img src="images/blog5/results4.png" alt="" /></span>
-
-                            <p><b>在经过预测模型重构(自愈)之后，运动路径再次回到了参考路径上。</b></p>
-
-                            <p><b>
-                                以上就是这篇文章的全部内容，综合来讲，创新性还可以，引入了一个非常小众的体系(RC)到MPC中，也通过数学推导证明了稳定性，毕竟是控制理论嘛，这方面更重要一些。<br>
-                                如果你对源代码感兴趣的话请联系作者，如果能引用一下的话那就再好不过啦。
-                            </b></p>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <a href="#blog4">看看上一篇</a>                                
-                                <a href="#work">返回目录</a>
-                                <a href="#blog_occupy">看看下一篇</a>
-                            </div>
-
+                        <article id="blog5" data-include="articles/blog5.html">
+                            <div class="loading">正在加载文章...</div>
                         </article>
 
                         <article id = "blog_occupy">
@@ -711,7 +318,7 @@
                                     This is <u>underlined</u> and this is code: <code>for (;;) { ... }</code>. Finally, <a href="#">this is a link</a>.</p>
                                     <hr />
                                     </section>
-                            </article>
+                        </article>
 
                     </div>
 
