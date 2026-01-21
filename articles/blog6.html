@@ -1,0 +1,151 @@
+<h2 class="major blog-title-wrap">
+    物理指导(嵌入)的对抗生成网络用于非平衡数据的轴承机械故障诊断
+</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog5">看看上一篇</a>                                
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
+<span class="image main"><img src="images/blog6/cover.jpg" alt="" /></span>
+
+<p><b>Physics-Guided GAN With Manhattan Attention: A Novel Approach for Imbalanced Bearing Vibration Fault Diagnosis</b></p>
+<p><b>文章发表在IEEE Transactions on Instrumentation and Measurement ( Volume: 74)</b></p>
+
+<p><b>还是先来谈谈motivation，何为Imbalanced Fault Diagnosis，为什么采用GAN来做，这个Physics-Guided (Informed)又是为什么要加。</b></p>
+
+<p><b>
+    从本质上来讲，Fault Diagnosis是一个分类任务，根据输入数据来将系统状态分为正常、故障类型1、故障类型2...<br>
+    理想的一个分类任务的数据集应该是，每一个类型的数据量差不多，比如类型一200组，类型二190组，类型三205组。<br>
+    但是对于故障数据来说，不同类型的收集难度不同，甚至有些细分情况无法收集，例如：<br>
+    正常数据，那很简单，系统设计出来就是为了让它正常跑，那只要把系统启动之后通过传感器收集数据即可；<br>
+    故障数据，那可就不好说了，目前的方法为人为地去设置故障，以机械轴承为例，在外圈/内圈/滚珠上设置裂痕，随后收集数据；<br>
+    当然这种做法也有一定道理，但是在实际场景中，机械故障可能不仅仅是的裂痕这么简单，或者即便是类似的裂痕，和在实验室中的响应结果也不相同。<br>
+    所以在真实场景中能收集到的故障数据是很少，甚至是无法获得的。
+</b></p>
+
+<p><b>
+    目前的一种思路在于，通过域自适应(Domain Adaption)的方法在小样本量故障数据的情况下去实现对网络的微调。<br>
+    那么问题来了，我们能不能直接在这种仅仅故障数据数量少的情况下直接去训练一个网络呢？<br>
+    不错，这就是所谓的Imbalanced Fault Diagnosis。
+</b></p>
+
+<p><b>
+    那么在使用这种不平衡(仅故障数据量少，正常数据可大量获得)数据的条件下，直接采用经典的数据驱动方法为发生什么问题呢？<br>
+    由于某种类型的数据(正常数据)的数量庞大，模型在优化过程中会不自觉的将最后的分类结果倾向于这个主要类。<br>
+    打个比方，你妈在出门之前告诉你要记得洗衣服和扫地，但是呢，她一直提醒你说要扫地，洗衣服就一开始提了一句，<br>
+    导致在你的印象里几乎只剩下了扫地，一提到要做家务就想到扫地，一提醒就是扫地，最后她快要回来的时候发现，原来衣服没洗。
+</b></p>
+
+<p><b>
+    为了让我们的模型不要陷入这种被主要类影响的情况，我们想到了，是否可以通过数据生成的方式来补充少数类呢？
+</b></p>
+
+<p><b>
+    答案是肯定的，通过生成方法来补充少数类是不平衡/小样本分类问题中的一个常见手段，而生成的一个经典方法(可以说是经过大家多年检验的)就是GAN。
+</b></p>
+
+<p><b>
+    那么现在问题就变成了，如何采用GAN这个框架，来实现有效、真实度高的伪数据生成呢？
+</b></p>
+
+<p><b>
+    现在，让我们从系统层面来看待这个问题，假设我们现在有一个真实故障数据\( x \)，经过某种操作(滤波器？)，把他淹没在噪声\( N \)中，<br>
+    现在我们把这个操作(滤波器？)记作是\( P \)，即\( P\left ( x \right ) = N\)。<br>
+    而GAN中的Generator(生成器\( G \))，它的输入一般是随机噪声，而输出是生成数据，那么是否可以把这个生成过程看作是\( P\left ( N \right ) = x\)。<br>
+    那也就是说，我们可以差不多这样理解\( G = P^{-1} \)。
+</b></p>
+
+<p><b>
+    然后再换一个思路，如果要直接进行一个矩阵计算，还是比较方便的，但是如果我要求一个矩阵的逆呢？OMG，太麻烦了。<br>
+    那么数学家就告诉我们了，虽然直接求一个逆很麻烦，但是呢，求一个“差不多的”逆还算简单，这个“差不多的”逆和真正的逆比较像。<br>
+</b></p>
+
+<p><b>
+    换到我们这个问题中就是，直接得到一个\( G \)是很困难的(这个\( G \)也许极度复杂)，但是我可不可以去得到一个“差不多的”\( G \)呢？<br>
+    我们再从正向方向(信号→噪声)来看，要把信号完全淹没在噪声中，要不少操作吧？但是如果我不是把它完全变成噪声，<br>
+    而是将它变成一个与它基本频率相似，其余频率分量以及相应谐波不同的信号呢？这是不是会简单不少。<br>
+    同理，来看这个逆过程，如果原始的\( G \)很复杂，那这种“差不多的”\( G \)不就简单一些了？说不定通过少量的数据优化、简单的结构就能把这个“差不多的”\( G \)给还原出来了。<br>
+    同时，如果我们在\( G \)的优化过程中加入一些物理约束，是不是也可以通过这个软约束的方法来实现部分边界条件的确认了呢？
+</b></p>
+
+<p><b>
+    很好，思路有了，让我们看看该怎么做吧。<br>
+    先来看看这个生成系统的框架，判别器并无差别，还是来判别输入的是真实数据还是生成数据。<br>
+    而生成器则多了两个组件：物理条件以及物理约束。
+</b></p>
+<span class="image main"><img src="images/blog6/generator.png" alt="" /></span>
+
+<p><b>
+    首先是物理条件，基于我们之前说的，“把原始信号变成一个基础特征频率相似，其他分量有区别的信号”的逆过程，<br>
+    首先我们要把这个“差不多的”信号给建模建出来，基础特征频率，我们采用故障特征频率，如下所示：
+</b></p>
+<span class="image main"><img src="images/blog6/eq7-9.png" alt="" /></span>
+
+<p><b>
+    那么把这些频率作为对应故障信号的基础频率，再辅以一些谐波、相位差以及部分偏差，我们便得到了这样一个“差不多的”信号：
+</b></p>
+<span class="image main"><img src="images/blog6/eq11.png" alt="" /></span>
+
+<p><b>
+    当然，一个故障信号还不止这么简单，由于机械结构上的损坏，信号会产生一些冲击，以及一些与故障频率相关的幅值变化，我们再把这些也加进去：
+</b></p>
+<span class="image main"><img src="images/blog6/eq12.png" alt="" /></span>
+
+<p><b>
+    哦，看起来好复杂，不过这些又都与后续的物理约束相关，不能省略哦。<br>
+    接下来到了物理约束，首先GAN有个自己的Loss，再加上我们之前的设计(幅度、频率以及冲击信号)，再额外给出三个相应的物理约束损失：
+</b></p>
+<span class="image main"><img src="images/blog6/eq14.png" alt="" /></span>
+<span class="image main"><img src="images/blog6/eq15.png" alt="" /></span>
+<span class="image main"><img src="images/blog6/eq16.png" alt="" /></span>
+
+<p><b>
+    最后，再把它们加个权，合起来：
+</b></p>
+<span class="image main"><img src="images/blog6/eq17.png" alt="" /></span>
+
+<p><b>
+    同时，为了好好地关注这些特征，我们来加个注意力关注这些物理特征，生成器便完成了。
+</b></p>
+
+<p><b>
+    接下里看看结果如何，分别在CWRU和HUST数据集上进行了验证，采用了6种不同的数据比例，以1:50为例，正常数据50份，其余故障数据1份。
+</b></p>
+<span class="image main"><img src="images/blog6/results1.png" alt="" /></span>
+
+<p><b>
+    再跟别人相比看看如何：
+</b></p>
+<span class="image main"><img src="images/blog6/results2.png" alt="" /></span>
+
+<p><b>
+    再看看混淆矩阵，究竟是哪些出了问题：
+</b></p>
+<span class="image main"><img src="images/blog6/cm1.png" alt="" /></span>
+<span class="image main"><img src="images/blog6/cm2.png" alt="" /></span>
+<p><b>
+    可以看到，主要的误判出现在内外圈的故障，事实上这两种故障也确实响应比较相近。
+</b></p>
+
+<p><b>
+    然后是相应的消融实验(废话，肯定更好啊，不然做来干什么)
+</b></p>
+<span class="image main"><img src="images/blog6/ab1.png" alt="" /></span>
+<span class="image main"><img src="images/blog6/ab2.png" alt="" /></span>
+
+<p><b>
+    最后还提了一种生成信号的评估指标，不过基本是按照物理特征来的，如此评价所提出的方法肯定是最佳。
+</b></p>
+<span class="image main"><img src="images/blog6/results3.png" alt="" /></span>
+
+<p><b>
+    以上就是这篇文章的全部内容，综合来讲，创新性还可以，在最近(24-25年)比较火的PINN的基础上做了一些工作。话说本来的名称是Physics Informed GAN，但是审稿人表示“PINN是用来解决PDE的，你没有涉及PDE啊，还是叫Physics Guided吧”。说实话有点无语，PDE不过是应用对象，应该是不涉及本质，不过谁让他是审稿人呢。<br>
+    如果你对源代码感兴趣的话请联系作者，如果能引用一下的话那就再好不过啦。
+</b></p>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog5">看看上一篇</a>                                
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
