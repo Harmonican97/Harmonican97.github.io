@@ -8,7 +8,31 @@
         <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script> -->
+        <script>
+            window.MathJax = {
+                tex: {
+                    // 允许使用 $...$ 和 \(...\) 作为行内公式
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    // 允许使用 $$...$$ 和 \[...\] 作为段落公式
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                    // 处理转义字符
+                    processEscapes: true
+                },
+                options: {
+                    // 告诉 MathJax 忽略某些标签内的内容，避免报错
+                    ignoreHtmlClass: 'tex2jax_ignore',
+                    processHtmlClass: 'tex2jax_process'
+                },
+                // 关键：确保启动时不自动渲染，由我们手动控制（解决动态加载问题）
+                startup: {
+                    pageReady: () => {
+                        return MathJax.startup.defaultPageReady();
+                    }
+                }
+            };
+        </script>
+        <script id="MathJax-script" async src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
         
         <style>
             /* ============================================== */
@@ -198,8 +222,8 @@
                             <div class="inner">
                                 <h1>Harmonican</h1>
                                 <p>欢迎光临，这里是 <a href="https://harmonican97.github.io/">Harmonican的博客</a> 以及<br />
-                                这个是 <a href="https://blog.csdn.net/mishibadu?type=blog">CSDN的链接</a> 来试试看吧！</p>
-                                <p>PS: 无论是这里还是CSDN，更新都随缘 &#128512</p>
+                                这个是 <a href="https://blog.csdn.net/mishibadu?type=blog">知乎的链接</a> 来试试看吧！</p>
+                                <p>PS: 无论是这里还是知乎，更新都随缘 &#128512</p>
                             </div>
                         </div>
                         <nav>
@@ -340,7 +364,7 @@
             <script src="assets/js/breakpoints.min.js"></script>
             <script src="assets/js/util.js"></script>
             <script src="assets/js/main.js"></script>
-            <script>
+            <!-- <script>
                 document.addEventListener("DOMContentLoaded", function() {
                     // 1. 获取所有需要加载文章的标签
                     const articles = document.querySelectorAll('article[data-include]');
@@ -398,9 +422,77 @@
                         }, 500);
                     });
                 });
+            </script> -->
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    // 1. 获取所有需要加载文章的标签
+                    const articles = document.querySelectorAll('article[data-include]');
+                    
+                    const loadPromises = [];
+            
+                    articles.forEach(article => {
+                        const file = article.getAttribute('data-include');
+                        
+                        // 显示正在加载
+                        article.innerHTML = '<div style="color:white; padding:20px; text-align:center;">正在加载文章内容...<br><small>(' + file + ')</small></div>';
+            
+                        // 2. 开始请求文件
+                        const promise = fetch(file)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error("HTTP error " + response.status);
+                                }
+                                return response.text();
+                            })
+                            .then(html => {
+                                // 加载成功，填入内容
+                                article.innerHTML = html;
+                            })
+                            .catch(error => {
+                                console.error('加载失败:', file, error);
+                                article.innerHTML = `
+                                    <div style="color: red; text-align: center; padding: 20px;">
+                                        <h3>加载失败</h3>
+                                        <p>无法读取文件: <b>${file}</b></p>
+                                    </div>
+                                `;
+                            });
+                        
+                        loadPromises.push(promise);
+                    });
+            
+                    // 3. 所有文章加载完毕后的处理
+                    Promise.all(loadPromises).then(() => {
+                        // --- 核心修改：更稳健的 MathJax 渲染逻辑 ---
+                        if (window.MathJax && window.MathJax.typesetPromise) {
+                            // 如果 MathJax 已经加载完毕，直接渲染
+                            MathJax.typesetPromise().catch(function (err) {
+                                console.log('MathJax rendering error: ' + err.message);
+                            });
+                        } else {
+                            // 如果 MathJax 还没加载完（网速慢），设置一个定时器检测
+                            const checkMathJax = setInterval(() => {
+                                if (window.MathJax && window.MathJax.typesetPromise) {
+                                    clearInterval(checkMathJax);
+                                    MathJax.typesetPromise();
+                                }
+                            }, 100); 
+                            
+                            // 10秒后如果在还没加载出来，就放弃检测，避免死循环
+                            setTimeout(() => clearInterval(checkMathJax), 10000);
+                        }
+                        
+                        // 通知 Dimension 模板重新计算高度
+                        setTimeout(() => {
+                            if (window.jQuery) {
+                                window.dispatchEvent(new Event('resize'));
+                            }
+                        }, 500);
+                    });
+                });
             </script>
 
-            <script>
+            <!-- <script>
                 document.addEventListener('DOMContentLoaded', function() {
                     // ================= 配置区域 =================
                     const playlist = [
@@ -537,6 +629,158 @@
                     }
                 
                     playSong();
+                
+                    document.body.addEventListener('click', function() {
+                        if (!isPlaying && playlist.length > 0) {
+                            playSong();
+                        }
+                    }, { once: true });
+                });
+            </script> -->
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // ================= 配置区域 =================
+                    const playlist = [
+                        { title: "宫崎骏组曲", file: "music/宫崎骏组曲(Harmonican ver).mp3" },
+                        { title: "大鱼", file: "music/大鱼-JP.mp3" }, 
+                        { title: "告白气球", file: "music/告白气球(Harmonica.ver).mp3" },
+                        { title: "屋上の少女", file: "music/屋上の少女.mp3" },
+                        { title: "MONOCHROME", file: "music/水槽 - MONOCHROME.mp3" },
+                        { title: "如果有你", file: "music/如果有你 - 天狼星口琴乐团.mp3" },
+                        { title: "the truth that you leave", file: "music/the truth that you leave.mp3" },
+                        { title: "HE∀ting Sφul", file: "music/Heating Soul.mp3" },
+                        { title: "群青", file: "music/YOASOBI - 群青.mp3" } 
+                    ];
+                    // ===========================================
+                
+                    const audio = document.getElementById('bg-music');
+                    const playPauseBtn = document.getElementById('play-pause-btn');
+                    const prevBtn = document.getElementById('prev-btn');
+                    const nextBtn = document.getElementById('next-btn');
+                    const shuffleBtn = document.getElementById('shuffle-btn');
+                    const musicInfo = document.getElementById('music-info');
+                    const volumeSlider = document.getElementById('volume-slider');
+                    // 获取整个播放器的容器
+                    const playerContainer = document.getElementById('music-player-container');
+                
+                    let currentIndex = 0;
+                    let isPlaying = false;
+                    let isShuffle = false;
+                
+                    audio.volume = volumeSlider.value;
+            
+                    playerContainer.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+            
+                    function loadSong(index) {
+                        currentIndex = index;
+                        audio.src = playlist[currentIndex].file;
+                        musicInfo.innerText = playlist[currentIndex].title;
+                    }
+                
+                    function playSong() {
+                        var playPromise = audio.play();
+                    
+                        if (playPromise !== undefined) {
+                            playPromise.then(_ => {
+                                isPlaying = true;
+                                playPauseBtn.classList.remove('fa-play');
+                                playPauseBtn.classList.add('fa-pause');
+                            })
+                            .catch(error => {
+                                console.log("Auto-play blocked.");
+                                isPlaying = false;
+                                playPauseBtn.classList.remove('fa-pause');
+                                playPauseBtn.classList.add('fa-play');
+                            });
+                        }
+                    }
+                
+                    function pauseSong() {
+                        audio.pause();
+                        isPlaying = false;
+                        playPauseBtn.classList.remove('fa-pause');
+                        playPauseBtn.classList.add('fa-play');
+                    }
+                
+                    playPauseBtn.addEventListener('click', () => {
+                        if (isPlaying) {
+                            pauseSong();
+                        } else {
+                            playSong();
+                        }
+                    });
+            
+                    shuffleBtn.addEventListener('click', () => {
+                        isShuffle = !isShuffle;
+                        if(isShuffle) {
+                            shuffleBtn.classList.add('active-shuffle');
+                            shuffleBtn.title = "随机播放：开";
+                        } else {
+                            shuffleBtn.classList.remove('active-shuffle');
+                            shuffleBtn.title = "随机播放：关";
+                        }
+                    });
+            
+                    function getNextIndex() {
+                        if (isShuffle) {
+                            let randIndex = currentIndex;
+                            if (playlist.length > 1) {
+                                while(randIndex === currentIndex) {
+                                    randIndex = Math.floor(Math.random() * playlist.length);
+                                }
+                            }
+                            return randIndex;
+                        } else {
+                            let next = currentIndex + 1;
+                            if (next > playlist.length - 1) {
+                                next = 0;
+                            }
+                            return next;
+                        }
+                    }
+            
+                    function getPrevIndex() {
+                        if (isShuffle) {
+                            return getNextIndex();
+                        } else {
+                            let prev = currentIndex - 1;
+                            if (prev < 0) {
+                                prev = playlist.length - 1;
+                            }
+                            return prev;
+                        }
+                    }
+                
+                    prevBtn.addEventListener('click', () => {
+                        let prevIndex = getPrevIndex();
+                        loadSong(prevIndex);
+                        playSong();
+                    });
+                
+                    nextBtn.addEventListener('click', () => {
+                        let nextIndex = getNextIndex();
+                        loadSong(nextIndex);
+                        playSong();
+                    });
+                
+                    audio.addEventListener('ended', () => {
+                        // 这里会自动触发 nextBtn 的 click 事件
+                        // 由于上面加了 e.stopPropagation()，这个点击不会导致文章关闭
+                        nextBtn.click();
+                    });
+            
+                    volumeSlider.addEventListener('input', (e) => {
+                        audio.volume = e.target.value;
+                    });
+                
+                    if(playlist.length > 0){
+                        loadSong(currentIndex);
+                    } else {
+                        musicInfo.innerText = "No Music";
+                    }
                 
                     document.body.addEventListener('click', function() {
                         if (!isPlaying && playlist.length > 0) {
