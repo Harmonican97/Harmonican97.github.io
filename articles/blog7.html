@@ -1,0 +1,311 @@
+<style>
+    .paper-image-placeholder {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 1.5rem 0;
+        padding: 2rem 1.25rem;
+        border: 2px dashed rgba(120, 140, 160, 0.75);
+        border-radius: 0.5rem;
+        background: rgba(120, 140, 160, 0.08);
+        text-align: center;
+        line-height: 1.8;
+    }
+
+    .paper-image-placeholder code {
+        word-break: break-all;
+    }
+
+    .blog-note-box {
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem;
+        border-left: 4px solid #6f8fa8;
+        background: rgba(111, 143, 168, 0.08);
+    }
+</style>
+
+<h2 class="major blog-title-wrap">
+    预测硬约束流匹配：复杂动态海流环境下的AUV鲁棒路径规划
+</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog6">看看上一篇</a>
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
+
+<span class="image main"><img src="images/blog7/cover.jpg" alt="PH-FM论文封面" /></span>
+
+<!-- <div class="paper-image-placeholder">
+    <b>封面图片占位</b><br>
+    建议使用：论文第1页的标题与摘要区域截图；也可以将论文 Fig. 2 的三维水下环境图裁剪为横向封面。<br>
+    建议保存路径：<code>images/blog7/cover.jpg</code>
+</div> -->
+
+<p><b>PH-FM: A Predictive Hard-Constrained Flow Matching framework for robust AUV path planning in complex dynamic environments</b></p>
+<p><b>文章发表在 Ocean Engineering, Volume 362 (2026), Article 126381</b></p>
+
+<p><b>
+    还是先来谈谈 motivation：AUV 路径规划已经研究了很多年，A*、RRT*、APF、PSO、强化学习都能拿来规划，为什么还要再搞一个 Flow Matching？<br>
+    因为在真正的水下环境里，“找到一条从起点到终点的路”只是最低要求，真正麻烦的是要同时满足三件事：路不能太长、不能撞上会移动的障碍物、还不能一路顶着海流把电池烧光。
+</b></p>
+
+<p><b>
+    假设一台 AUV 要从海域左下角开到右上角。<br>
+    A* 很擅长在已知地图上找短路，但是前方那条“最短通道”里突然游进来一条鱼，原来的最优路径可能瞬间报废；<br>
+    APF 反应很快，看到障碍就绕，可它只看眼前，容易在多个障碍物之间来回摇摆，甚至被困在局部极小值；<br>
+    RRT* 和 PSO 可以继续搜索，但动态环境变化得太快时，可能刚算出一条路，环境就已经不是刚才那个环境了。<br>
+    至于强化学习，当然也可以学，不过训练成本、奖励设计以及未见场景中的安全保证仍然是绕不开的问题。
+</b></p>
+
+<p><b>
+    所以，这篇工作的核心矛盾其实非常清楚：<br>
+    全局规划器“看得远”，但通常反应慢；局部规划器“反应快”，但通常看不远。<br>
+    PH-FM 想做的，就是让一个学习到的生成式向量场负责“往哪里走比较划算”，再让预测势场和硬安全锁负责“遇到危险时必须怎么躲”。
+</b></p>
+
+<p><b>
+    可以把它类比成开车：导航软件负责给出全局路线，人负责根据前车、行人和突发情况踩刹车、打方向。<br>
+    如果完全相信导航，可能直接开进施工区；如果完全不看导航，只根据眼前路况随机拐弯，又可能永远到不了目的地。<br>
+    PH-FM 就是把“导航”和“应急驾驶”分成两个层次，然后再把它们接起来。
+</b></p>
+
+<p><b>
+    先来看整套框架。论文将方法分成两个阶段：<br>
+    Phase 1 用 Conditional Flow Matching 学习全局的、海流感知的导航向量场；<br>
+    Phase 2 在在线规划时加入 Predictive Potential Field、Hard Safety Lock、Flow Surfing 和 Adaptive Momentum，得到最终可执行的速度指令。
+</b></p>
+
+<span class="image main"><img src="images/blog7/framework.png" alt="PH-FM整体框架" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：整体方法框架</b><br>
+    请使用论文 <b>Fig. 1</b>：The overall framework of the proposed PH-FM method（论文第5页）。<br>
+    建议保存路径：<code>images/blog7/framework.png</code>
+</div> -->
+
+<p><b>
+    那么 Flow Matching 到底在这里干了什么？<br>
+    先不考虑障碍物，给定起点 \(\mathbf{x}_0\) 和终点 \(\mathbf{x}_1\)，最直接的路径当然是一条直线：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\mathbf{x}_t=(1-t)\mathbf{x}_0+t\mathbf{x}_1\)
+</b></p>
+
+<p><b>
+    对时间 \(t\) 求导之后，目标速度场就是：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\mathbf{u}_t=\mathbf{x}_1-\mathbf{x}_0\)
+</b></p>
+
+<p><b>
+    看起来是不是简单得有点过分？没错，单独看这个式子，它就是告诉网络“朝终点走”。<br>
+    真正有意思的是，网络输入里不只有当前位置和目标点，还加入了当前位置的海流向量。于是网络学习的就不再只是几何意义上的直线方向，而是“在这样的海流条件下，怎么走到终点更省力”。
+</b></p>
+
+<p><b>
+    论文采用三层、每层256个神经元的 MLP 作为 VectorField Network，并使用 SiLU 激活函数。训练目标也很直接，就是让网络预测的向量场 \(\mathbf{v}_{\theta}\) 尽量接近上面的条件目标速度：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\mathcal{L}_{FM}=\mathbb{E}\left[\left\|\mathbf{v}_{\theta}(\mathbf{x}_t,t,\mathbf{c})-(\mathbf{x}_1-\mathbf{x}_0)\right\|_2^2\right]\)
+</b></p>
+
+<p><b>
+    这里还有一个很重要、也很容易被忽略的设计：网络条件 \(\mathbf{c}\) 中包含目标位置和局部海流，但故意不直接包含障碍物信息。<br>
+    为什么？因为作者希望 Phase 1 专心学习“海流中的全局运输规律”，而把障碍物避让交给 Phase 2。<br>
+    这样做相当于把问题拆开：全局模型不需要因为障碍物布局变化就重新训练，局部模块再根据实时障碍物去扭曲原本的全局路径。
+</b></p>
+
+<div class="blog-note-box"><b>
+    这个解耦思路可以概括成一句话：Flow Matching 负责“方向感”，物理约束负责“边界感”。<br>
+    前者给出一个连续、平滑、能够利用海流的先验；后者确保这个先验不会因为生成模型的误差而把 AUV 带到障碍物上。
+</b></div>
+
+<p><b>
+    在论文的仿真环境中，海流不是一个简单的常值扰动，而是由深度相关的基础流和多个三维涡旋叠加得到。<br>
+    静态障碍物用固定球体表示，动态障碍物则在两个端点之间周期运动，从而形成一个同时包含流场、静态结构和移动目标的三维环境。
+</b></p>
+
+<span class="image main"><img src="images/blog7/environment.png" alt="三维动态水下环境" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：三维仿真环境</b><br>
+    请使用论文 <b>Fig. 2</b>：Visualization of the 3D underwater simulation environment（论文第7页）。<br>
+    图中绿色球体为起点、红色星形为终点、紫色球体为静态障碍、橙色球体为动态障碍、蓝色箭头为海流场。<br>
+    建议保存路径：<code>images/blog7/environment.png</code>
+</div> -->
+
+<p><b>
+    有了全局向量场之后，接下来就是这篇文章里最“保命”的部分：Predictive Potential Field，简称 PPF。<br>
+    普通人工势场通常根据障碍物“现在在哪里”计算斥力，而 PPF 会把动态障碍物投影到未来 \(1.5\,\mathrm{s}\) 的位置，再根据预测距离生成斥力。<br>
+    换句话说，它不是等障碍物已经冲到脸上再躲，而是先猜它一会儿会到哪，再提前让路。
+</b></p>
+
+<p><b>
+    论文采用三次型排斥势函数，距离越接近危险区域，斥力增长越快，形成一个所谓的“soft wall”。<br>
+    但是，只有 soft wall 还不够。势场终究是软约束，参数没调好、预测有误或者多个力相互抵消时，生成结果仍然可能不安全。<br>
+    因此作者又加了一层 Hard Safety Lock。
+</b></p>
+
+<p><b>
+    当预测安全距离小于临界阈值 \(d_{crit}\) 时，系统会暂时覆盖 Flow Matching 给出的全局引导，直接执行最大允许的逃逸方向。<br>
+    论文中 \(d_{crit}=2.5\,\mathrm{m}\)，并进一步要求这个阈值大于最坏情况下的制动距离与额外安全裕量：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(d_{crit} &gt; \dfrac{v_{max}^{2}}{2a_{max}}+r_{margin}\)
+</b></p>
+
+<p><b>
+    这点很关键。所谓“Hard”并不是说神经网络突然获得了数学魔法，而是把最坏制动能力、控制延迟和不确定性余量都塞进安全缓冲区，在危险真正不可逆之前触发覆盖控制。<br>
+    当然，论文中的规划器仍然属于高层运动学引导，最后还要由低层控制器去跟踪，所以实际系统里的安全性最终仍取决于动力学建模、状态估计和执行器能力。
+</b></p>
+
+<p><b>
+    除了保命，PH-FM 还想省电，于是又引入了一个很形象的策略：Flow Surfing，顺流冲浪。<br>
+    当 AUV 距离障碍物足够远，而且规划方向与海流方向的余弦相似度大于0.7时，控制器会降低主动推进比例，让海流“免费”推着 AUV 走。<br>
+    这和骑自行车遇到顺风时少踩几脚是一个道理；但如果前面有障碍，系统就不会为了省电还硬蹭着海流走。
+</b></p>
+
+<p><b>
+    最后再加上 Adaptive Momentum：开阔区域里保留较大的历史速度权重，让轨迹更平滑；危险区域里把动量系数降到接近0，让控制器优先快速反应。<br>
+    因此，这套方法的逻辑可以总结成：平时顺着全局向量场平滑巡航，能借流就借流；看见未来有风险就提前绕；真正逼近危险阈值时，直接触发硬覆盖。
+</b></p>
+
+<p><b>
+    接下来看看结果。论文首先在纯静态环境中把障碍物数量从4个增加到32个。<br>
+    静态场景下所有方法最终都能到达终点，所以真正拉开差距的是安全距离。障碍物达到32个时，A*、RRT*、APF和PSO的最小障碍间隙分别只有1.50 m、1.72 m、1.06 m和1.00 m，而 PH-FM 仍然保持 \(5.19\pm1.42\,\mathrm{m}\)。<br>
+    代价是路径从 A* 的138.51 m增加到143.20 m，大约多了3.4%。也就是说，它没有执着于贴着障碍物边缘抄近路，而是主动花一点路程换更大的安全余量。
+</b></p>
+
+<span class="image main"><img src="images/blog7/static_results.png" alt="静态环境路径规划结果" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：静态环境结果</b><br>
+    请使用论文 <b>Fig. 3</b>：4、8、16和32个静态障碍物条件下的轨迹可视化（论文第8页）。<br>
+    如需同时展示精确数值，可再截取同页的 <b>Table 2</b>。<br>
+    建议保存路径：<code>images/blog7/static_results.png</code>
+</div> -->
+
+<p><b>
+    动态环境才是这篇工作的主战场。动态障碍物从4个增加到10个后，基线方法的成功率开始明显下降。<br>
+    例如在6个动态障碍物时，A*、RRT*、APF和PSO的成功率分别为60%、80%、50%和70%；PH-FM 仍然是100%。<br>
+    到10个动态障碍物时，PH-FM 依旧达到100%的成功率，并保持6.46 m的平均最小安全间隙，而其他方法的成功率为80%至90%。
+</b></p>
+
+<p><b>
+    更有意思的是，PH-FM 在动态场景里不一定比传统方法走得更远。以8个动态障碍物为例，它的平均路径长度是134.93 m，反而短于 A* 的135.10 m。<br>
+    原因并不神秘：预测模块能够提前发现移动障碍物之间即将出现的空隙，顺着“窗口”穿过去；纯反应式方法往往先靠近、再急转、再绕远，甚至在局部区域来回振荡。
+</b></p>
+
+<span class="image main"><img src="images/blog7/dynamic_results.png" alt="动态环境路径规划结果" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：动态环境结果</b><br>
+    请使用论文 <b>Fig. 4</b>：4、6、8和10个动态障碍物条件下的轨迹可视化（论文第9页）。<br>
+    如需同时展示精确数值，可再截取同页的 <b>Table 3</b>。<br>
+    建议保存路径：<code>images/blog7/dynamic_results.png</code>
+</div> -->
+
+<p><b>
+    然后是更接近真实任务的混合环境：静态障碍物和动态障碍物同时存在。<br>
+    在最复杂的 S8D6 场景中，RRT*、APF和PSO的成功率分别为70%、80%和90%，A*为90%，PH-FM仍然保持100%。<br>
+    同时，PH-FM的最小安全间隙为 \(5.65\pm1.20\,\mathrm{m}\)，是 A* 的2.43 m的两倍以上，也接近 RRT* 的1.44 m的四倍。
+</b></p>
+
+<span class="image main"><img src="images/blog7/mixed_results.png" alt="混合环境路径规划结果" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：静态与动态障碍物混合环境</b><br>
+    请使用论文 <b>Fig. 5</b>：S4D3、S4D6、S8D3和S8D6四种混合场景（论文第11页）。<br>
+    如需同时展示精确数值，可再截取论文第10页的 <b>Table 4</b>。<br>
+    建议保存路径：<code>images/blog7/mixed_results.png</code>
+</div> -->
+
+<p><b>
+    安全是一回事，能不能实时跑又是另一回事。<br>
+    在包含15个静态障碍物和5个动态障碍物的密集环境中，PH-FM完整规划循环的平均单步推理时间为 \(15.90\pm1.22\,\mathrm{ms}\)，对应60 Hz以上的更新频率。<br>
+    APF确实更快，只有0.12 ms，但它付出的代价是局部视野和较弱的安全表现；A*和PSO的平均单步摊销时间分别为80.53 ms和122.85 ms，而且一旦需要重新计算整条路径，还会出现更明显的瞬时停顿。
+</b></p>
+
+<p><b>
+    这里需要注意一个容易混淆的地方：论文 Table 7 中三层256神经元网络的前向推理时间约为11.38 ms，而 Table 5 中15.90 ms对应的是完整 PH-FM 规划步骤，后者还包括障碍物距离计算、预测势场和安全策略修正。<br>
+    所以这两个数字并不矛盾，一个偏网络本体，一个偏完整在线闭环。
+</b></p>
+
+<p><b>
+    作者还进一步把动态障碍物数量增加到12个做压力测试。随着环境复杂度增加，所有基线的成功率都出现下降，其中RRT*从4个障碍物时的90%下降到12个障碍物时的大约60%；PH-FM则一直保持100%。
+</b></p>
+
+<span class="image main"><img src="images/blog7/robustness.png" alt="动态障碍物密度鲁棒性" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：动态障碍物密度鲁棒性</b><br>
+    请使用论文 <b>Fig. 6</b>：动态障碍物数量为4、8和12时，各方法成功率变化趋势（论文第12页）。<br>
+    建议保存路径：<code>images/blog7/robustness.png</code>
+</div> -->
+
+<p><b>
+    为了避免“你是不是只记住了训练时那些规则轨迹”的质疑，论文还给动态障碍物速度叠加了标准差为0.5 m/s的连续高斯噪声，使它们的运动不再严格周期化。PH-FM依然保持100%的无碰撞率。<br>
+    此外，网络在0.8至1.2 m/s的涡流强度上训练，却被直接拿到1.5至2.0 m/s的强流环境中测试，且不重新训练。作者报告网络会主动生成更宽的绕行轨迹，并借助 Flow Surfing 避开难以正面对抗的高速流区。
+</b></p>
+
+<p><b>
+    再来看能耗。这里不能只看路径长度，因为水下推进功率和“相对于水体的速度”有关，而不是单纯看相对于地面的移动速度。论文采用的能耗函数中，平动部分与相对速度的三次方相关，同时还惩罚剧烈转向：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\mathcal{J}_{energy}=\sum_k\left(k_t\left\|\mathbf{v}_{rel,k}\right\|^3+k_r\left\|\boldsymbol{\omega}_k\right\|^2\right)\Delta t\)
+</b></p>
+
+<p><b>
+    这也解释了为什么“顺流冲浪”有意义：只要让 AUV 的地面速度更多地来自海流，就能降低它相对于水体的速度，而三次方项会把这部分收益进一步放大。<br>
+    在能耗—安全散点图中，APF的能耗超过1400 J，最小安全间隙只有大约1.8 m；A*和RRT*能耗较低，但安全间隙不足2.5 m。PH-FM位于一个更均衡的位置，能耗约950 J，同时保持5 m以上的安全间隙。
+</b></p>
+
+<span class="image main"><img src="images/blog7/energy_safety.png" alt="能耗与安全权衡" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：Energy-Safety trade-off</b><br>
+    请使用论文 <b>Fig. 7</b>：能耗与最小障碍间隙的散点图（论文第13页）。<br>
+    横轴越小越省电，纵轴越大越安全，气泡大小表示成功率。<br>
+    建议保存路径：<code>images/blog7/energy_safety.png</code>
+</div> -->
+
+<p><b>
+    最后来看一个很重要的消融：如果把海流条件从 Flow Matching 网络里拿掉，会怎么样？<br>
+    No-Flow-Conditioning版本和完整 PH-FM 的路径长度非常接近，分别为138.58 m和137.37 m。乍一看似乎没什么区别。<br>
+    但能耗从603.74 J直接升到733.65 J，增加了约21.5%。也就是说，不看海流的模型仍然会“朝终点走”，却会在不知不觉中和水流对着干；完整模型则会做一些很小的空间绕行，借助涡流切向速度来省推进能量。
+</b></p>
+
+<span class="image main"><img src="images/blog7/flow_ablation.png" alt="海流条件消融实验" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：海流条件消融实验</b><br>
+    请使用论文 <b>Table 8</b>：NFC与PH-FM在S8D6场景中的路径长度和能耗比较（论文第13页）。<br>
+    建议保存路径：<code>images/blog7/flow_ablation.png</code>
+</div> -->
+
+<p><b>
+    综合来讲，这篇工作的亮点并不只是“把 Flow Matching 用到了路径规划”。如果只是让生成模型直接吐一条轨迹，那么在高风险水下任务中还是很难让人放心。<br>
+    更关键的是，它把生成式全局先验、动态障碍物预测、硬安全覆盖和海流能量利用放进了一个层级框架中：学习模块负责提供高质量的全局趋势，物理模块负责在实时环境中纠偏和兜底。
+</b></p>
+
+<p><b>
+    不过也要客观看待目前的结论。论文的主要验证仍然来自仿真，运动模型采用简化的3-DOF设置，并假设可以获得较准确的状态与障碍物信息。<br>
+    真正部署到湖试或海试时，前视声呐的虚警与漏检、障碍物速度估计误差、通信与计算延迟、低层控制器跟踪误差、推进器饱和和强非平稳湍流都会继续挑战所谓的“硬安全”。<br>
+    论文也把原始声呐/点云感知、多AUV协同以及基于随机微分方程的非平稳海流建模列为后续方向。
+</b></p>
+
+<p><b>
+    所以我个人更愿意把 PH-FM 看成一种很有潜力的架构思想：不要要求一个神经网络既懂全局、又懂局部、还必须在任何时候绝对安全；而是让它做擅长的连续表示和先验学习，再用明确的预测与物理规则把安全边界补上。<br>
+    这种“学习负责性能，约束负责底线”的思路，可能比单纯追求一个更大的端到端模型更适合高风险的海洋机器人任务。
+</b></p>
+
+<p><b>
+    以上就是这篇文章的主要内容。论文代码已经开源，仓库地址为：<br>
+    <code>https://github.com/Harmonican97/Predictive-Hard-Constrained-Flow-Matching</code><br>
+    如果你对 Flow Matching、AUV 路径规划或者海流能量利用感兴趣，可以进一步查看论文中的完整公式、参数设置和仿真代码；如果相关内容对你的研究有帮助，也欢迎引用这项工作。
+</b></p>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog6">看看上一篇</a>
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
