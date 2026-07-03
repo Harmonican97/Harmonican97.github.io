@@ -1,0 +1,340 @@
+<style>
+    .paper-image-placeholder {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 1.5rem 0;
+        padding: 2rem 1.25rem;
+        border: 2px dashed rgba(120, 140, 160, 0.75);
+        border-radius: 0.5rem;
+        background: rgba(120, 140, 160, 0.08);
+        text-align: center;
+        line-height: 1.8;
+    }
+
+    .paper-image-placeholder code {
+        word-break: break-all;
+    }
+
+    .blog-note-box {
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem;
+        border-left: 4px solid #6f8fa8;
+        background: rgba(111, 143, 168, 0.08);
+    }
+</style>
+
+<h2 class="major blog-title-wrap">
+    混合神经网络：低频AUV状态信号下的复杂故障诊断与在线微调
+</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog7">看看上一篇</a>
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
+
+<span class="image main"><img src="images/blog8/cover.jpeg" alt="HNN论文封面" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>封面图片占位</b><br>
+    建议使用：论文第1页的标题与摘要区域截图；也可以将论文 Fig. 3 的整体诊断框架图裁剪为横向封面。<br>
+    建议保存路径：<code>images/blog8/cover.jpg</code>
+</div> -->
+
+<p><b>A hybrid neural network with dual attention and online fine-tuning for complex fault diagnosis in autonomous underwater vehicles</b></p>
+<p><b>文章发表在 Ocean Engineering, Volume 363 (2026), Article 126713</b></p>
+
+<p><b>
+    还是先来谈谈 motivation：为什么 AUV 故障诊断这件事并不能简单地套一个CNN、Transformer或者域适应网络就结束了？<br>
+    因为水下机器人和普通旋转机械最大的不同在于，它往往拿不到特别“奢侈”的高频振动信号。<br>
+    轴承诊断里动不动就是 12 kHz、48 kHz 的振动采样，故障冲击、谐波、边带信息都比较丰富；<br>
+    但是 AUV 在真实任务中能稳定记录下来的，更多是推进器指令、深度、压力、电压、姿态角、角速度、加速度这类低频状态量，采样率通常也就是 100 Hz 左右。
+</b></p>
+
+<p><b>
+    这就带来一个很直接的问题：信号里本来就没多少“故障味道”，还要让模型在海流扰动、姿态变化、平台差异以及故障严重程度变化的情况下继续判断。<br>
+    打个比方，轴承振动数据像是在安静房间里听一个人说话，虽然可能有点噪声，但关键词还是比较清楚；<br>
+    AUV 低频状态信号更像是在水下隔着玻璃听别人说话，声音已经很闷了，旁边还有水流、电机和姿态调整的干扰。<br>
+    此时模型如果只会死记训练集里的模式，换一个故障严重程度或者换一个平台，马上就可能认不出来。
+</b></p>
+
+<p><b>
+    所以这篇文章要解决的核心问题，不只是“怎么把特征提得更好”，也不是单纯“怎么做域适应”。<br>
+    它真正面对的是三个问题同时出现：<br>
+    第一，低频信号里的故障特征很弱；第二，AUV上算力和能耗有限；第三，测试时的故障严重程度和运行条件可能已经和训练时不一样。<br>
+    也就是说，离线训练再漂亮，如果上线以后不能轻量化适应，那么实际价值还是会打折扣。
+</b></p>
+
+<p><b>
+    因此，作者提出了一个 Hybrid Neural Network，简称 HNN。<br>
+    它的结构可以概括成一句话：前面用 Dual Attention Feature Extractor（DAFE）把低频状态信号里的局部细节和全局依赖都挖出来，后面用 Spiking Neural Network（SNN）作为分类器，并通过 STDP 做在线微调。<br>
+    这就相当于：大脑皮层先把复杂信号编码成比较稳定的特征，最后的决策神经元再根据现场新数据不断调整自己的判断边界。
+</b></p>
+
+<div class="blog-note-box"><b>
+    这篇文章的关键不是“我发明了Swin Attention、Sparse Attention或者STDP”。<br>
+    更准确地说，它的创新点在于把局部窗口注意力、稀疏全局建模和脉冲在线可塑性，重新组织成一个适合低频、跨严重程度、部署受限AUV故障诊断的系统框架。
+</b></div>
+
+<p><b>
+    先来看整体流程。原始AUV状态信号由16个通道组成，包括4个推进器占空比、深度、压力、电压、姿态角、角速度以及线加速度。<br>
+    每个长度为64的时间窗先组成 \(64\times16\) 的矩阵，再通过插值调整为 \(32\times32\)，随后送入DAFE进行特征提取。<br>
+    离线阶段，DAFE通过梯度下降训练；在线阶段，DAFE固定不动，SNN分类器通过STDP根据新到来的数据进行轻量更新。
+</b></p>
+
+<span class="image main"><img src="images/blog8/framework.png" alt="HNN整体故障诊断框架" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：整体诊断框架</b><br>
+    请使用论文 <b>Fig. 3</b>：Overview of the proposed hybrid neural-network-based fault-diagnosis framework for AUVs（论文第7页）。<br>
+    建议保存路径：<code>images/blog8/framework.png</code>
+</div> -->
+
+<p><b>
+    先拆开看 DAFE。它包含三个部分：SWAM、SGAM 和 FFM。<br>
+    SWAM 负责看局部，SGAM 负责看全局，FFM 负责把两者融合起来。<br>
+    这种设计其实很符合故障诊断的直觉：某些故障只在局部时间片段里露出一点点异常，而另一些故障则表现为多个状态量之间的长期耦合关系改变。<br>
+    如果只看局部，可能错过跨通道、跨时间的整体变化；如果只看全局，又可能把那些微弱但关键的局部细节平均掉。
+</b></p>
+
+<p><b>
+    SWAM 的基本思路来自 Swin Transformer：不要让所有token两两相互注意，那样成本太高；先把特征图切成小窗口，在每个窗口内部做注意力，再通过 shifted window 让相邻窗口之间也能交换信息。<br>
+    这一步非常像把一张地图切成若干小格子，先在每个小格子里看局部结构，再把格子平移一下，让边界附近的信息也能互相沟通。
+</b></p>
+
+<p><b>
+    不过，论文又在窗口内部加了 LSH 稀疏注意力。<br>
+    简单理解就是：即便在一个窗口里，也不是所有token都值得互相关注。先用哈希把相似的query/key分到同一个bucket里，只在同一个bucket里计算注意力。<br>
+    如果哈希位宽为 \(B\)，理想情况下窗口内注意力复杂度可以从大致 \(O(n_w^2)\) 降到 \(O(n_w^2/2^B)\)。<br>
+    当然，哈希也不是越稀疏越好；后面的消融会看到，过度稀疏会把真正有用的局部关联也切断。
+</b></p>
+
+<span class="image main"><img src="images/blog8/swam.png" alt="SWAM窗口划分与LSH稀疏注意力" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：SWAM窗口注意力</b><br>
+    请使用论文 <b>Fig. 1</b>：Illustration of normal and shifted window partitioning. LSH further partitions windows into sparse attention buckets（论文第3页）。<br>
+    建议保存路径：<code>images/blog8/swam.png</code>
+</div> -->
+
+<p><b>
+    SGAM 则负责全局依赖。传统global attention的问题是太贵，尤其当特征图变大之后，计算复杂度会很快膨胀。<br>
+    因此文章采用了一种更“省钱”的做法：先通过多尺度聚合把空间token压缩成更紧凑的表示，再对这些压缩后的token做 top-\(K\) 稀疏注意力，最后再映射回原始分辨率。<br>
+    与此同时，SGAM还并行计算通道注意力，用来判断哪些通道更重要。
+</b></p>
+
+<p><b>
+    换句话说，SWAM像是在问“这一小段信号内部哪里异常？”，SGAM则是在问“不同时间片段和不同通道之间有没有整体关系变化？”。<br>
+    两者的输出再交给FFM，用门控的方式决定每个位置更相信局部信息还是全局信息。
+</b></p>
+
+<span class="image main"><img src="images/blog8/sgam.png" alt="SGAM通道注意力与稀疏空间注意力" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：SGAM稀疏全局注意力</b><br>
+    请使用论文 <b>Fig. 2</b>：Computation of channel attention and sparse spatial attention in SGAM（论文第4页）。<br>
+    建议保存路径：<code>images/blog8/sgam.png</code>
+</div> -->
+
+<p><b>
+    接下来是SNN和STDP。<br>
+    这里最容易产生误解：不是说SNN天然就比普通神经网络更准，也不是说STDP一开就能自动解决所有域偏移。<br>
+    论文的设计更克制：DAFE离线训练好之后保持固定，在线只更新最后的SNN分类器。<br>
+    这样做的好处是稳定、轻量，不会因为少量新数据就把整个特征空间带偏；缺点是如果域偏移巨大，固定特征空间本身可能已经不够用了。
+</b></p>
+
+<p><b>
+    从论文的解释来看，STDP可以被理解为一种“分类原型”的局部更新。<br>
+    设DAFE输出的特征为 \(z_t=f_\theta(x_t)\)，源域和目标域特征分布一般满足：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(P_s(z,y)\neq P_t(z,y)\)
+</b></p>
+
+<p><b>
+    这意味着原先学好的分类边界不一定还适合目标域。<br>
+    SNN输出层的突触权重可以近似看成每个类别的模板或字典原子，当某个输入特征和某个类别神经元反复以因果时间顺序共同激活时，对应连接增强；反之则减弱。<br>
+    所以，STDP做的事情可以理解为：在不反向传播整个网络的情况下，让最后的类别模板慢慢向目标域特征统计靠拢。
+</b></p>
+
+<div class="blog-note-box"><b>
+    这里的在线学习是“受限制的在线学习”。<br>
+    它只微调分类器，不改DAFE；它依赖稳定的特征空间、阈值稳态调节和eligibility trace；因此它更像是现场校准，而不是重新训练一个新模型。
+</b></div>
+
+<p><b>
+    论文也给出了具体实现结构。输入为 \(1\times32\times32\)，局部分支使用LSH-enhanced Swin Transformer，窗口大小为4、注意力头数为4；全局分支采用HS-GAM，reduction ratio为4，top-\(K\)为8。<br>
+    最终特征维度为1024，随后通过Poisson rate encoding变成脉冲序列，送入 \(1024-2048-C\) 的LIF神经元分类器，仿真步数为100。
+</b></p>
+
+<span class="image main"><img src="images/blog8/architecture_table.png" alt="HNN结构配置表" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：HNN结构配置</b><br>
+    请使用论文 <b>Table 3</b>：Architectural configuration of the implemented HNN（论文第9页）。<br>
+    建议保存路径：<code>images/blog8/architecture_table.png</code>
+</div> -->
+
+<p><b>
+    数据集方面，文章采用了三个数据集：CWRU、Haizhe AUV以及BlueROV。<br>
+    CWRU原始振动信号为12 kHz，但为了模拟低频诊断场景，先低通滤波再降采样到200 Hz；<br>
+    Haizhe和BlueROV均为100 Hz的AUV状态数据，其中Haizhe包含正常、增加配重、压力增益故障、轻微螺旋桨损伤和严重螺旋桨损伤五类；BlueROV则来自更真实的湖试环境。<br>
+    训练测试划分也很有针对性：CWRU用7 mils故障训练、21 mils故障测试；Haizhe和BlueROV用轻微螺旋桨损伤训练、严重螺旋桨损伤测试，主要考察severity-induced domain shift。
+</b></p>
+
+<span class="image main"><img src="images/blog8/platforms.png" alt="CWRU与Haizhe实验平台" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：实验平台与故障设置</b><br>
+    建议使用论文 <b>Fig. 4</b>：CWRU bearing test bench，以及 <b>Fig. 5</b>：Haizhe AUV fault-type configuration and experimental platform（论文第8页）。<br>
+    可以将两图拼接成一张横向图。建议保存路径：<code>images/blog8/platforms.png</code>
+</div> -->
+
+<p><b>
+    接下来看看结果。先看总表：HNN在CWRU、Haizhe和BlueROV上的准确率分别为99.21%、97.59%和95.32%。<br>
+    这三个数字的含义不同：CWRU说明该方法在低采样率旋转机械场景中仍然能保持强分类能力；Haizhe说明它能处理AUV低频状态信号和螺旋桨损伤严重程度变化；BlueROV则更重要，因为它把方法放到了湖试条件下，环境扰动和平台差异都更明显。
+</b></p>
+
+<span class="image main"><img src="images/blog8/main_results_table.png" alt="CWRU、Haizhe和BlueROV总体性能" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：三个数据集总体性能</b><br>
+    请使用论文 <b>Table 4</b>：Classification performance on CWRU, Haizhe, and BlueROV datasets（论文第9页）。<br>
+    建议保存路径：<code>images/blog8/main_results_table.png</code>
+</div> -->
+
+<p><b>
+    再看混淆矩阵和t-SNE。CWRU中主要混淆出现在IR和OR2之间，误判率约为1.1%，这也符合内圈与外圈某些故障在降采样后特征接近的情况。<br>
+    Haizhe中最大的困难仍然是轻微与严重螺旋桨损伤之间的区分，混淆约6%。这点很真实：螺旋桨损伤不是一个边界特别清晰的离散状态，而更像是连续退化过程中的几个标签点。<br>
+    BlueROV中最难的是螺旋桨损伤，正确识别率为89.79%，主要会被误判为正常状态、负载增加或深度传感器故障。
+</b></p>
+
+<span class="image main"><img src="images/blog8/haizhe_visualization.png" alt="Haizhe混淆矩阵与t-SNE" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：Haizhe诊断可视化</b><br>
+    请使用论文 <b>Fig. 7</b>：Confusion matrix and t-SNE visualization for the Haizhe AUV dataset (100 Hz)（论文第10页）。<br>
+    建议保存路径：<code>images/blog8/haizhe_visualization.png</code>
+</div> -->
+
+<span class="image main"><img src="images/blog8/bluerov_visualization.png" alt="BlueROV混淆矩阵与t-SNE" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：BlueROV诊断可视化</b><br>
+    请使用论文 <b>Fig. 8</b>：Confusion matrix and t-SNE visualization for the BlueROV dataset (100 Hz)（论文第10页）。<br>
+    建议保存路径：<code>images/blog8/bluerov_visualization.png</code>
+</div> -->
+
+<p><b>
+    和基线方法相比，差距就比较明显了。<br>
+    在Haizhe上，表现最好的基线GASEL准确率为87.19%，MDFNN为86.19%，而HNN达到97.59%，相当于比最强基线高出10.40个百分点。<br>
+    在BlueROV湖试数据上，最强基线GASEL为81.22%，MDFNN为80.45%，HNN达到95.32%，提升14.10个百分点。<br>
+    这说明仅靠随机森林、普通序列卷积、多传感器融合或者传统域适应，并不能同时解决低频信号弱特征、跨严重程度偏移和现场扰动这几个问题。
+</b></p>
+
+<span class="image main"><img src="images/blog8/baseline_tables1.png" alt="CWRU、Haizhe和BlueROV基线对比表" /></span>
+<span class="image main"><img src="images/blog8/baseline_tables2.png" alt="CWRU、Haizhe和BlueROV基线对比表" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：基线方法对比</b><br>
+    建议使用论文 <b>Table 5</b>（CWRU对比）、<b>Table 6</b>（Haizhe对比）和 <b>Table 7</b>（BlueROV湖试对比）（论文第11-12页）。<br>
+    可根据页面宽度选择只展示Table 6和Table 7，或者将三张表拼接成一张长图。建议保存路径：<code>images/blog8/baseline_tables.png</code>
+</div> -->
+
+<p><b>
+    这篇文章最值得单独看的其实是在线微调实验。<br>
+    如果只用DAFE、没有fine-tuning，Haizhe上的准确率只有82.70%；<br>
+    如果采用常规network-based fine-tuning，准确率提升到92.91%；<br>
+    而采用本文的STDP在线微调后，准确率达到97.59%。<br>
+    这说明固定离线模型在跨严重程度条件下确实不够，普通网络微调虽然有效，但成本更高；STDP-SNN在这里提供了一个更轻量的分类器级适应方案。
+</b></p>
+
+<span class="image main"><img src="images/blog8/finetuning_visualization.png" alt="不同在线微调方式的混淆矩阵与t-SNE" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：在线微调可视化</b><br>
+    请使用论文 <b>Fig. 9</b>：Confusion matrix and t-SNE visualization of different online fine-tuning settings on Haizhe（论文第11页）。<br>
+    建议保存路径：<code>images/blog8/finetuning_visualization.png</code>
+</div> -->
+
+<span class="image main"><img src="images/blog8/finetuning_table.png" alt="不同微调模式对比表" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：不同微调模式对比</b><br>
+    请使用论文 <b>Table 8</b>：Comparative results under different fine-tuning modes on Haizhe（论文第12页）。<br>
+    建议保存路径：<code>images/blog8/finetuning_table.png</code>
+</div> -->
+
+<p><b>
+    当然，部署导向的方法不能只看准确率，还要看算力。<br>
+    论文中HNN总参数量为6.537M，模型大小约24.972 MB；DAFE每batch的FLOPs为122.446M，延迟约 \(3.240\pm0.317\) ms；完整HNN延迟为 \(103.865\pm12.363\) ms，其中STDP更新延迟约 \(91.754\pm1.132\) ms。<br>
+    这个结果说明DAFE本身并不重，真正的耗时主要在SNN的时间步仿真和STDP在线更新上。
+</b></p>
+
+<p><b>
+    所以这里需要稍微冷静一点：虽然文章采用了稀疏注意力来降低特征提取成本，但完整HNN距离“随便塞进任意低功耗嵌入式平台实时跑”还不能画等号。<br>
+    如果部署在AUV实际硬件上，还需要进一步做脉冲仿真优化、STDP更新调度、功耗评估以及与任务规划模块的同步。
+</b></p>
+
+<span class="image main"><img src="images/blog8/complexity.png" alt="FLOPs与运行时计算开销" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图表占位：复杂度与运行时间</b><br>
+    建议使用论文 <b>Fig. 10</b>：FLOPs comparison of proposed DAFE with various module combinations，以及 <b>Table 9</b>：Runtime and computational profile of the proposed HNN（论文第13页）。<br>
+    建议保存路径：<code>images/blog8/complexity.png</code>
+</div> -->
+
+<p><b>
+    消融实验也比较有意思。对于LSH-SWAM，哈希位宽 \(B=3\) 时效果最好，准确率为97.50%，相对FLOPs降到0.74，相对延迟降到0.79；<br>
+    但当 \(B=4\) 时，虽然计算量进一步下降，准确率却降到96.65%。<br>
+    这说明稀疏不是越强越好，过度稀疏会把一些有用的局部token关系也切掉。
+</b></p>
+
+<p><b>
+    对SGAM而言，去掉SGAM后准确率从97.59%下降到94.80%，说明全局依赖确实重要；<br>
+    换成dense global attention可以略微提高到97.75%，但相对FLOPs变成2.60、相对延迟变成2.30，成本明显不划算。<br>
+    因此SGAM的价值不在于追求绝对最高精度，而是在接近dense attention效果的同时，把计算开销压下来。
+</b></p>
+
+<span class="image main"><img src="images/blog8/ablation_tables.png" alt="LSH-SWAM与SGAM消融实验表" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：消融实验</b><br>
+    请使用论文 <b>Table 10</b>：Ablation on LSH-SWAM，以及 <b>Table 11</b>：Structural ablation on SGAM（论文第13页）。<br>
+    建议保存路径：<code>images/blog8/ablation_tables.png</code>
+</div> -->
+
+<p><b>
+    最后，论文还给出了一个time-resolved online evaluation的设计，用test-then-train协议观察模型在严重螺旋桨损伤流式数据上的适应过程。<br>
+    这里的逻辑很重要：每个batch先测试，再用它更新，避免“先看答案再考试”的乐观偏差。<br>
+    结果趋势显示，No Adaptation基本保持平坦，SGD Head Adaptation逐步上升，而STDP-SNN在早期更快提升并趋于稳定。<br>
+    不过这张图标题中写的是Expected prequential learning curves，因此阅读时应将其理解为对在线适应行为的趋势展示，而不是替代全部真实部署曲线。
+</b></p>
+
+<span class="image main"><img src="images/blog8/online_curve.png" alt="在线预序贯学习曲线" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：在线学习曲线</b><br>
+    请使用论文 <b>Fig. 11</b>：Expected prequential learning curves on Haizhe under cross-severity deployment using the test-then-train protocol（论文第14页）。<br>
+    建议保存路径：<code>images/blog8/online_curve.png</code>
+</div> -->
+
+<p><b>
+    综合来看，这篇文章的亮点在于它把AUV故障诊断从“离线分类准确率”往“现场可适应诊断”推进了一步。<br>
+    DAFE负责从低频状态量中提取局部—全局联合特征，SNN负责将这些特征转成更适合在线可塑性调整的分类结构，STDP则提供了一种不需要端到端反向传播的轻量更新方式。<br>
+    对于AUV这种数据难采、故障难复现、工况变化明显的平台来说，这种设计思路是有实际意义的。
+</b></p>
+
+<p><b>
+    但也要客观看待目前的限制。<br>
+    第一，低频状态量虽然更容易获得，但信息上限天然低于高频振动或声学信号，因此极早期微弱故障仍然可能难以识别；<br>
+    第二，实验采用了class-balanced subsets，这有利于公平比较，但真实海试中的故障分布通常是长尾且高度不平衡；<br>
+    第三，目前在线更新主要限制在分类器层面，如果遇到更剧烈的平台差异或传感器漂移，固定DAFE特征空间可能不够；<br>
+    第四，完整HNN尚需在嵌入式硬件上进行更系统的实时性、功耗和鲁棒性验证。
+</b></p>
+
+<p><b>
+    所以我个人更愿意把这篇工作理解为一种“工程可部署方向的架构探索”：<br>
+    不要指望一个端到端网络一次训练好后永远适应所有AUV、所有海况和所有故障严重程度；<br>
+    更合理的方式是让离线模型提供一个稳定的特征基座，再让轻量在线模块在现场进行小幅校准。<br>
+    这种“离线表征 + 在线校准”的路线，可能比单纯追求更大的Transformer或者更复杂的域适应损失，更适合水下机器人这类高成本、强扰动、弱标注的应用场景。
+</b></p>
+
+<p><b>
+    以上就是这篇文章的主要内容。<br>
+    如果你关注AUV健康管理、低频故障诊断、在线学习或者SNN在机器人系统中的应用，这篇文章提供了一个比较完整的范例：它既没有完全放弃深度特征学习，也没有把所有希望都寄托在一个离线模型上，而是通过局部—全局注意力和脉冲在线微调，把性能与部署适应性放在了同一个框架里。<br>
+    如果相关内容对你的研究有帮助，也欢迎引用这项工作。
+</b></p>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog7">看看上一篇</a>
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
