@@ -1,0 +1,389 @@
+<style>
+    .paper-image-placeholder {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 1.5rem 0;
+        padding: 2rem 1.25rem;
+        border: 2px dashed rgba(120, 140, 160, 0.75);
+        border-radius: 0.5rem;
+        background: rgba(120, 140, 160, 0.08);
+        text-align: center;
+        line-height: 1.8;
+    }
+
+    .paper-image-placeholder code {
+        word-break: break-all;
+    }
+
+    .blog-note-box {
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem;
+        border-left: 4px solid #6f8fa8;
+        background: rgba(111, 143, 168, 0.08);
+    }
+</style>
+
+<h2 class="major blog-title-wrap">
+    原型学习与自适应马氏门控：面向AUV未知故障的开放集诊断
+</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog8">看看上一篇</a>
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
+
+<span class="image main"><img src="images/blog9/cover.jpeg" alt="ProtoNet-MDAG论文封面" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>封面图片占位</b><br>
+    建议使用：论文第1页的标题与摘要区域截图；也可以将论文 Fig. 1 的整体框架图裁剪为横向封面。<br>
+    建议保存路径：<code>images/blog9/cover.jpg</code>
+</div> -->
+
+<p><b>Open-Set Fault Diagnosis for Autonomous Underwater Vehicles Via Prototype Learning and Adaptive Mahalanobis Gating</b></p>
+<p><b>文章发表在 Journal of Field Robotics, 2026</b></p>
+
+<p><b>
+    还是先来谈谈 motivation：为什么已经有了这么多AUV故障诊断模型，还要再强调 Open-Set Fault Diagnosis？<br>
+    因为传统故障诊断大多默认一件事：测试时出现的所有状态，都在训练集里见过。<br>
+    也就是说，模型只需要在“正常、故障1、故障2、故障3……”之间做选择。<br>
+    但真实水下任务里最危险的，恰恰往往是模型没有见过的异常。
+</b></p>
+
+<p><b>
+    举个例子，假设训练时我们只让模型见过正常状态、压力增益故障、严重螺旋桨损伤。<br>
+    但AUV下水以后，可能遇到外部负载导致的深度异常、轻微螺旋桨损伤、缠绕、碰撞、某个传感器间歇失效，甚至是多个小问题叠加。<br>
+    如果还是用闭集分类器，它一定会从已知类别里硬选一个答案。<br>
+    这就很像你问一个人“这是不是香蕉、苹果或者梨”，但你手里拿的是一个榴莲，他却必须回答“香蕉/苹果/梨”之一，最后很可能一本正经地说“这是梨”。
+</b></p>
+
+<p><b>
+    对AUV来说，这种“自信地错判”比“不知道”更危险。<br>
+    因为如果一个未知异常被误判成某个已知轻微故障，后续的容错控制、任务规划或者维护决策都可能沿着错误方向走。<br>
+    所以开放集诊断的目标不是单纯追求分类准确率，而是要做到两件事：见过的故障要分得准，没见过的异常要敢于拒绝。
+</b></p>
+
+<div class="blog-note-box"><b>
+    闭集诊断问的是：“这个样本属于哪个已知类别？”<br>
+    开放集诊断多问了一句：“它真的像任何一个已知类别吗？”<br>
+    ProtoNet-MDAG 的核心就是先用原型学习回答第一个问题，再用自适应马氏门控回答第二个问题。
+</b></div>
+
+<p><b>
+    先来看整体框架。论文提出的方法叫 ProtoNet-MDAG。<br>
+    ProtoNet 指的是基于原型的表示学习：每个已知类别在潜在空间里都有一个原型点，样本靠近哪个原型，就先暂时归到哪个类。<br>
+    MDAG 指的是 Mahalanobis Distance Adaptive Gating，也就是自适应马氏距离门控：即便一个样本离某个原型最近，也要进一步检查它是否在该类“统计上合理”的范围内。<br>
+    如果不合理，就输出 Unknown。
+</b></p>
+
+<span class="image main"><img src="images/blog9/framework.png" alt="ProtoNet-MDAG整体框架" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：整体方法框架</b><br>
+    请使用论文 <b>Fig. 1</b>：Overall framework of ProtoNet-MDAG（论文第3页）。<br>
+    图中包括AUV传感器数据输入、预处理、ProtoNet训练阶段、MDAG推理阶段与窗口投票。<br>
+    建议保存路径：<code>images/blog9/framework.png</code>
+</div> -->
+
+<p><b>
+    为什么要用“原型”？<br>
+    对于开放集问题来说，普通softmax分类器有一个天然缺陷：它总会把概率分给已知类别，而且最大概率有时并不代表真的可信。<br>
+    原型学习则更像是在潜在空间里给每一类放一个“代表点”。<br>
+    如果一个测试样本离所有代表点都很远，或者虽然离某个代表点近但方向不对，那么它就有可能是未知状态。
+</b></p>
+
+<p><b>
+    形式上，输入的多变量遥测窗口记为 \(\mathbf{X}\in\mathbb{R}^{B\times C\times L}\)，其中 \(C=16\)，\(L=50\)。<br>
+    也就是说，每个样本包含16个AUV状态通道，时间长度是50个采样点。由于采样频率是100 Hz，所以一个窗口对应0.5 s的状态片段。<br>
+    这个长度不长，但足够让模型看到推进器指令、深度、压力、姿态和加速度之间的一小段动态关系。
+</b></p>
+
+<p><b>
+    特征提取器采用 Dilated Multi-Scale Encoder。它有三个并行分支：<br>
+    一个 \(k=3\) 的短程卷积分支，用来捕捉局部突变；<br>
+    一个 \(k=7\) 的中程卷积分支，用来捕捉一般动态响应；<br>
+    一个 \(k=7,d=2\) 的空洞卷积分支，用来扩大感受野，捕捉更慢的变化趋势。<br>
+    最后把三个分支拼接起来，再用 \(1\times1\) 卷积融合，得到128维潜在特征。
+</b></p>
+
+<span class="image main"><img src="images/blog9/encoder.png" alt="空洞多尺度编码器结构" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：空洞多尺度编码器</b><br>
+    请使用论文 <b>Fig. 2</b>：Architecture of dilated multi-scale encoder（论文第3页）。<br>
+    建议保存路径：<code>images/blog9/encoder.png</code>
+</div> -->
+
+<p><b>
+    这个三分支设计其实非常适合AUV遥测信号。<br>
+    有些异常是短暂的，比如推进器瞬态抖动；有些异常是中尺度的，比如深度控制响应变慢；还有些异常是缓慢漂移的，比如外部负载或水动力条件变化引起的趋势偏移。<br>
+    如果只用一个固定尺度的卷积，就容易只擅长其中一种。<br>
+    所以这里的多尺度不是为了“看起来复杂”，而是为了让模型同时关注快、中、慢三类故障线索。
+</b></p>
+
+<p><b>
+    接下来是这篇文章里非常关键的一个词：feature atomization，也就是特征原子化。<br>
+    它的意思不是把特征变成真正的原子，而是让同一类样本在潜在空间里尽可能压缩成紧凑的小团。<br>
+    对开放集来说，这一步很重要。因为已知类占据的空间越松散，未知样本就越容易混进去；已知类越紧凑，空白区域越清楚，未知样本越容易被拒绝。
+</b></p>
+
+<p><b>
+    对于样本特征 \(\mathbf{z}_i\) 和类别原型 \(\mathbf{p}_k\)，首先可以计算它们的欧氏距离：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(d_{ik}=\left\|\mathbf{z}_i-\mathbf{p}_k\right\|_2^2\)
+</b></p>
+
+<p><b>
+    然后通过 margin loss 让样本离自己的原型更近、离其他原型更远；再通过 variance penalty 把同类特征进一步拉向自己的原型。<br>
+    简单讲，就是既要“不同类分开”，也要“同一类收紧”。<br>
+    此外论文还加入 topology regularization，让不同类别原型之间的相对关系符合预设的类别相似结构，避免原型空间乱长。
+</b></p>
+
+<div class="blog-note-box"><b>
+    这里有一个很有意思的点：闭集分类时，只要决策边界能把训练类分开，特征团稍微松一点也未必明显影响准确率。<br>
+    但开放集诊断时，特征团松散就会直接扩大已知类的“势力范围”，导致未知异常被吸进去。<br>
+    所以开放集问题里的表示学习，不能只问“分不分得开”，还要问“边界干不干净”。
+</b></div>
+
+<p><b>
+    然后轮到 MDAG 出场。<br>
+    如果只使用最近原型分类，任何测试样本都会被归到某个已知类，这显然不能开放集。<br>
+    因此，模型先得到一个临时预测类别 \(c^*\)，然后计算样本相对于该类原型的自适应马氏距离：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(s_{MD}(\mathbf{z})=\sum_{j=1}^{M}\dfrac{(z_j-p_{c^*,j})^2}{v_{c^*,j}+\epsilon}\)
+</b></p>
+
+<p><b>
+    这里的 \(v_{c^*,j}\) 是该类别在第 \(j\) 个潜在维度上的方差。<br>
+    这个设计比普通欧氏距离更合理，因为不同维度的稳定性并不一样：有些特征维度本来就波动大，就不应该太敏感；有些维度在某一类里非常稳定，一旦偏出去就更可疑。<br>
+    换句话说，MDAG不是只看“离原型远不远”，而是看“偏离的方向是否符合这个类别平时的变化习惯”。
+</b></p>
+
+<p><b>
+    阈值也不是拍脑袋定的，而是用只包含已知类的 calibration set 来定。<br>
+    论文采用95%分位数作为阈值，也就是让大多数已知样本能够通过，同时把马氏分数异常高的样本拒绝为Unknown。<br>
+    再加上时间窗口内的score smoothing和majority voting，可以降低水下遥测噪声导致的单窗误判。
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\hat{y}(t)=\begin{cases}
+    \text{Unknown}, & \bar{s}_{MD}(t)\geq \tau_{MD},\\
+    \tilde{y}(t), & \bar{s}_{MD}(t)<\tau_{MD}.
+    \end{cases}\)
+</b></p>
+
+<p><b>
+    数据和任务设置也很值得看。论文使用Haizhe AUV和BlueROV-class underwater robotic platform两个平台。<br>
+    已知类包括 Normal、PG（压力增益异常）和PDB（严重螺旋桨损伤），未知类包括 AD（异常深度相关行为）和PDS（轻微螺旋桨损伤）。<br>
+    这个设置其实很刁钻：PDS和PDB都是螺旋桨相关，只是严重程度不同；AD和PG又都和深度/压力链路有关。<br>
+    因此模型不能靠粗粒度“传感器故障/执行器故障”来偷懒，而必须真的学到更细的统计边界。
+</b></p>
+
+<span class="image main"><img src="images/blog9/data_aquisition_dataset_analysis.png" alt="实验平台与遥测采集系统" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：实验平台与遥测采集</b><br>
+    请使用论文 <b>Fig. 3</b>：Overview of the experimental underwater robotic platforms and telemetry acquisition system（论文第7页）。<br>
+    左侧为Haizhe AUV，右侧为BlueROV-class平台。建议保存路径：<code>images/blog9/platforms.png</code>
+</div> -->
+
+<!-- <span class="image main"><img src="images/blog9/protocol_tables.png" alt="开放集类别配置与数据统计" /></span> -->
+<span class="image main"><img src="images/blog9/tab1.png" alt="开放集类别配置与数据统计" /></span>
+<span class="image main"><img src="images/blog9/tab2.png" alt="开放集类别配置与数据统计" /></span>
+<span class="image main"><img src="images/blog9/tab3.png" alt="开放集类别配置与数据统计" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：开放集配置与数据统计</b><br>
+    建议使用论文 <b>Table 1</b>：Open-set diagnosis configuration，以及 <b>Table 2</b>：Overall statistics of collected mission-level telemetry data（论文第8页）。<br>
+    如果版面允许，也可补充 <b>Table 3</b>：Window-level statistics（论文第9页）。建议保存路径：<code>images/blog9/protocol_tables.png</code>
+</div> -->
+
+<span class="image main"><img src="images/blog9/tab5.png" alt="故障实现协议" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：故障实现协议</b><br>
+    请使用论文 <b>Table 5</b>：Fault implementation protocol on the Haizhe AUV and the BlueROV-class underwater robotic platform（论文第11页）。<br>
+    建议保存路径：<code>images/blog9/fault_protocol.png</code>
+</div> -->
+
+<p><b>
+    接下来看看结果。<br>
+    在Haizhe上，ProtoNet-MDAG取得了非常强的开放集表现：macro accuracy约0.9739，macro-F1约0.9741，Unknown-vs-Known AUROC为0.9953，AUPR为0.9930。<br>
+    更重要的是，在校准阈值下Unknown TPR达到0.9814，而Known FRR只有0.0317。<br>
+    也就是说，它不仅能认出已知故障，也能把大部分未知状态挡在门外，同时没有把太多已知样本误拒绝。
+</b></p>
+
+<p><b>
+    BlueROV上的结果就更现实一些。macro accuracy为0.8912，macro-F1为0.9099，Unknown TPR下降到0.8062。<br>
+    这不是一个“完美故事”，但反而说明文章比较诚实：换到结构、推进布局、控制特性都不同的BlueROV平台以后，已知类和未知类的统计边界会变得更模糊，开放集拒绝确实会受平台分布偏移影响。
+</b></p>
+
+<!-- <span class="image main"><img src="images/blog9/overall_results.png" alt="Haizhe与BlueROV开放集诊断结果" /></span> -->
+<span class="image main"><img src="images/blog9/tab6.png" alt="Haizhe与BlueROV开放集诊断结果" /></span>
+<span class="image main"><img src="images/blog9/tab7.png" alt="Haizhe与BlueROV开放集诊断结果" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：总体与逐类性能</b><br>
+    建议使用论文 <b>Table 6</b>：Overall open-set performance on Haizhe and BlueROV，以及 <b>Table 7</b>、<b>Table 8</b>：Haizhe和BlueROV逐类分类报告（论文第11页）。<br>
+    建议保存路径：<code>images/blog9/overall_results.png</code>
+</div> -->
+
+<p><b>
+    再看Haizhe上的混淆矩阵和t-SNE。<br>
+    Unknown类别有99.06%被正确拒绝，PDB有98.77%被正确识别，PG有94.20%被识别为PG，Normal有93.82%被识别为Normal。<br>
+    t-SNE中可以看到已知类别形成了相对紧凑的簇，而Unknown样本分布在更大的开放区域中。<br>
+    这正好对应前面说的feature atomization：已知类越像几个紧凑的岛，未知类就越不容易被当作岛内居民。
+</b></p>
+
+<span class="image main"><img src="images/blog9/haizhe_visual.png" alt="Haizhe开放集混淆矩阵与t-SNE" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：Haizhe开放集可视化</b><br>
+    请使用论文 <b>Fig. 4</b>：Visual analysis of open-set diagnosis results on the Haizhe dataset，包括归一化混淆矩阵和t-SNE可视化（论文第12页）。<br>
+    建议保存路径：<code>images/blog9/haizhe_visual.png</code>
+</div> -->
+
+<p><b>
+    和基线相比，差距非常明显。<br>
+    在Haizhe上，MWDTN的准确率约为0.6967，SEOC约为0.6296，OpenMax SeqCNN约为0.5957，OpenMax GASEL约为0.5912。<br>
+    ProtoNet-MDAG达到 \(0.9719\pm0.0038\)，F1-score达到 \(0.9716\pm0.0041\)。<br>
+    开放集指标上差距更大：ProtoNet-MDAG的AUROC为 \(0.9953\pm0.0011\)，FPR@95TPR只有 \(0.0166\pm0.0019\)，而最强外部基线MWDTN的FPR@95TPR仍有 \(0.4185\pm0.0182\)。
+</b></p>
+
+<p><b>
+    这说明一个问题：把机械故障诊断里的开放集方法直接搬到AUV低频遥测上，并不一定有效；<br>
+    把SeqCNN、GASEL这类AUV诊断骨干再接一个OpenMax，也不够。<br>
+    因为OpenMax更像是事后给分类输出“重新校准”，而ProtoNet-MDAG是在表示学习阶段就主动把已知类压紧，再用统计门控做拒绝。
+</b></p>
+
+<span class="image main"><img src="images/blog9/baseline_tables.png" alt="基线方法对比表" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：基线方法对比</b><br>
+    请使用论文 <b>Table 9</b>：Performance comparison of different models on Haizhe，以及 <b>Table 10</b>：Open-set rejection comparison（论文第13页）。<br>
+    建议保存路径：<code>images/blog9/baseline_tables.png</code>
+</div> -->
+
+<p><b>
+    然后是消融实验。<br>
+    去掉dilated branch后，准确率从0.9739降到0.9412，AUROC从0.9951降到0.9625；<br>
+    只用单尺度 \(k=3\) 或 \(k=7\) 的卷积分支，macro-F1分别只有0.9238和0.9372；<br>
+    换成标准Conv1D更差，accuracy只有0.8824。<br>
+    这说明AUV故障确实不是单一时间尺度能解释的，多尺度时间建模是必要的。
+</b></p>
+
+<p><b>
+    损失函数消融也很能说明问题。<br>
+    去掉atomization loss后，closed-set意义上的accuracy并没有崩掉，仍有0.9622，但开放集指标明显变差，AUROC降到0.9394，FPR@97TPR升到0.2412。<br>
+    这正好说明：分类准确率高，不代表未知拒绝就可靠。<br>
+    如果不主动压紧已知类特征，未知样本就更容易钻进已知类边界。
+</b></p>
+
+<p><b>
+    决策规则消融则更直接。<br>
+    如果不用MDAG、只做prototype-only分类，accuracy只有0.9025，FPR@97TPR高达0.5162。<br>
+    Euclidean gating和global Mahalanobis都有帮助，但仍不如class-wise adaptive Mahalanobis。<br>
+    最夸张的是去掉temporal aggregation后，macro-F1降到0.8864，FPR@97TPR升到0.7195，说明水下遥测里的短时波动真的不能忽视。
+</b></p>
+
+<span class="image main"><img src="images/blog9/ablation_table.png" alt="ProtoNet-MDAG组件消融实验" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：组件级消融实验</b><br>
+    请使用论文 <b>Table 11</b>：Component ablation results of ProtoNet-MDAG on the Haizhe dataset（论文第14页）。<br>
+    建议保存路径：<code>images/blog9/ablation_table.png</code>
+</div> -->
+
+<p><b>
+    Table 12又进一步分析了score类型、时间聚合窗口和校准分位数。<br>
+    在相同设置下，MD score比energy、minimum Euclidean distance和MSP更稳定。<br>
+    时间聚合窗口从 \(w=1\) 增大到 \(w=11\) 后，macro-F1显著提升，FPR@97TPR从0.7195降到约0.0211；\(w=21\) 在Haizhe上数值最好。<br>
+    但这也带来一个现实问题：窗口越大越稳，响应越慢。<br>
+    所以它不是一个无脑越大越好的参数，而是稳定性和实时性的权衡。
+</b></p>
+
+<span class="image main"><img src="images/blog9/open_set_ablation.png" alt="开放集推理设计消融" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：开放集推理设计消融</b><br>
+    请使用论文 <b>Table 12</b>：Compact open-set ablation results on Haizhe for score type、temporal aggregation window size and calibration quantile（论文第15页）。<br>
+    建议保存路径：<code>images/blog9/open_set_ablation.png</code>
+</div> -->
+
+<p><b>
+    鲁棒性实验也值得看。论文在标准化后的遥测空间里加入bias、gain、delay、noise、missing、drift以及combo扰动，并且阈值只在clean calibration set上校准一次，随后固定不变。<br>
+    结果显示，bias、gain、noise、missing和drift下macro-F1基本仍在0.960以上，OSCR接近0.995，Unknown TPR大约维持在0.99附近。<br>
+    这说明模型对中等幅值扰动和测量损坏比较稳。
+</b></p>
+
+<p><b>
+    但delay最麻烦。<br>
+    在随机1–3个采样点延迟下，macro-F1降到0.9139，Known FRR升到0.1444；combo扰动下macro-F1进一步降到0.8984。<br>
+    这也非常符合直觉：幅值噪声可以通过归一化、统计门控和时间平滑来缓解，但时间错位会直接破坏多尺度编码器所依赖的时序结构。<br>
+    对AUV这种低频状态信号来说，序列对齐问题可能比单纯加噪更致命。
+</b></p>
+
+<span class="image main"><img src="images/blog9/stress_test.png" alt="遥测扰动压力测试" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：压力测试扰动与结果</b><br>
+    建议使用论文 <b>Table 13</b>：Definitions and parameter settings of telemetry perturbations，以及 <b>Table 14</b>：Stress-test results on Haizhe（论文第16-17页）。<br>
+    建议保存路径：<code>images/blog9/stress_test.png</code>
+</div> -->
+
+<p><b>
+    为了更直观地理解MDAG，论文还画了MD score分布和操作点权衡。<br>
+    已知样本的MD score集中在低分区域，未知样本整体向高分区域移动，校准阈值 \(\tau_{MD}=427.48\) 位于两者之间。<br>
+    右侧曲线则展示Unknown TPR和Known FRR之间的关系：想要拒绝更多未知样本，就不可避免地会多拒绝一些已知样本。<br>
+    这就是开放集诊断中永远绕不开的 trade-off。
+</b></p>
+
+<span class="image main"><img src="images/blog9/md_distribution.png" alt="MD分数分布与操作点权衡" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：MD分数分布与操作点权衡</b><br>
+    请使用论文 <b>Fig. 5</b>：MD score distribution and operating-point trade-off on the Haizhe dataset（论文第17页）。<br>
+    建议保存路径：<code>images/blog9/md_distribution.png</code>
+</div> -->
+
+<p><b>
+    最后看看部署开销。<br>
+    ProtoNet-MDAG只有22,048个可训练参数，FP32参数内存约86.12 KiB；编码器每个窗口大约1.0496M MACs，约2.0992M FLOPs；MDAG的度量计算只有约512次操作。<br>
+    在单线程CPU、batch size 1下，推理延迟为 \(0.6618\pm0.2009\,\mathrm{ms/window}\)，吞吐量约1511 windows/s。<br>
+    而实际评估stride为20、采样率100 Hz，相当于每0.2 s产生一个新窗口，也就是只需要约5 windows/s。<br>
+    从这个角度看，核心模型推理不是实时部署的瓶颈，真正的延迟可能更多来自数据采集、通信、缓冲和时间聚合。
+</b></p>
+
+<span class="image main"><img src="images/blog9/complexity.png" alt="计算复杂度与推理效率" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：复杂度与推理效率</b><br>
+    请使用论文 <b>Table 15</b>：Computational complexity and host-computer inference efficiency of ProtoNet-MDAG（论文第18页）。<br>
+    建议保存路径：<code>images/blog9/complexity.png</code>
+</div> -->
+
+<p><b>
+    综合来讲，这篇文章的亮点在于它没有把开放集诊断简单理解为“softmax后面加个阈值”。<br>
+    它先通过多尺度编码器处理AUV低频、多源、强耦合遥测；再通过原型学习和feature atomization把已知类压紧；最后用class-wise adaptive Mahalanobis gating进行统计校验。<br>
+    这套逻辑是比较完整的：表示空间先变干净，拒绝规则再变可信。
+</b></p>
+
+<p><b>
+    但也要客观看待目前的限制。<br>
+    第一，BlueROV上的Unknown TPR只有0.8062，说明跨平台开放集拒绝仍然比较困难；<br>
+    第二，固定长度窗口 \(L=50\) 虽然简单可复现，但并不一定适合所有故障，突发故障可能需要更短窗口，缓慢退化可能需要更长上下文；<br>
+    第三，时间聚合虽然能提高稳定性，但必然带来响应延迟；<br>
+    第四，当前主要还是基于已有平台数据验证，未来还需要更多平台、更多海况、更自然的长尾故障分布来检验。
+</b></p>
+
+<p><b>
+    所以我个人更愿意把ProtoNet-MDAG看成一种非常适合水下机器人健康管理的范式：<br>
+    不要让模型对所有东西都强行分类，而是允许它说“这不像我认识的任何故障”。<br>
+    在高风险水下任务里，这种“不确定时拒绝”的能力，可能比多提升一点闭集准确率更有工程价值。<br>
+    当然，如何让这种拒绝能力跨平台、跨海况、跨任务持续可靠，仍然是下一步真正困难的问题。
+</b></p>
+
+<p><b>
+    以上就是这篇文章的主要内容。论文代码已经开源，仓库地址为：<br>
+    <code>https://github.com/Harmonican97/Open-set-fault-diagnosis-for-AUV</code><br>
+    如果你关注AUV健康管理、开放集识别、原型学习或者统计校准式故障诊断，这篇文章提供了一个比较完整的实现范例；如果相关内容对你的研究有帮助，也欢迎引用这项工作。<br>
+    请注意联系第二作者哦，因为第一作者P都不懂，😁
+</b></p>
+
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="#blog8">看看上一篇</a>
+    <a href="#work">返回目录</a>
+    <a href="#blog_occupy">看看下一篇</a>
+</div>
