@@ -5,10 +5,13 @@
 id="任务因子化黎曼神经算子跨转速跨负载与跨设备的轴承故障诊断">任务因子化黎曼神经算子：跨转速、跨负载与跨设备的轴承故障诊断</h2>
 <p><a href="#blog9">看看上一篇</a> | <a href="#work">返回目录</a> | <a
 href="#blog_occupy">看看下一篇</a></p>
-<figure>
+
+<!-- <figure>
 <img src="images/blog10/cover.jpg" alt="TF-RiNO论文封面" />
 <figcaption aria-hidden="true">TF-RiNO论文封面</figcaption>
 </figure>
+ -->
+<span class="image main"><img src="images/blog10/cover.jpg" alt="TF-RiNO论文封面" /></span>
 
 <p><strong>Task-Factorized Riemannian Neural Operator for Bearing Fault
 Diagnosis Across Heterogeneous Operational Shifts</strong></p>
@@ -41,10 +44,12 @@ Backbone，使同一个骨干网络能根据不同工况改变自己的频谱和
 SPD × Grassmann 乘积流形，最后送入 Task Factorization
 Head，把故障共享信息和任务相关干扰拆开。</strong></p>
 
-<figure>
+<!-- <figure>
 <img src="images/blog10/overview.png" alt="TF-RiNO整体架构" />
 <figcaption aria-hidden="true">TF-RiNO整体架构</figcaption>
 </figure>
+ -->
+<span class="image main"><img src="images/blog10/overview.png" alt="TF-RiNO整体架构" /></span>
 
 <p><strong>这里先说明一个很重要的概念：论文虽然用了 Neural Operator
 这个名字，但作者自己也特别强调，这里的“neural
@@ -88,13 +93,15 @@ $$</span></p>
 <p><strong>真正有意思的部分在后面：Riemannian Manifold
 Lift。传统深度网络大多把一段信号压成一个欧氏向量，然后在这个向量空间里做分类或域对齐。<br />
 但轴承振动里有两类结构非常重要：一类是通道/特征之间的二阶统计关系，另一类是主导振动模式所在的子空间。所以文章分别用SPD和Grassmann两个流形来描述。</strong></p>
-<figure>
+
+<!-- <figure>
 <img src="images/blog10/representation.png"
 alt="SPD与Grassmann乘积流形及因子化空间" />
 <figcaption
 aria-hidden="true">SPD与Grassmann乘积流形及因子化空间</figcaption>
-</figure>
-<blockquote>
+</figure> -->
+
+<span class="image main"><img src="images/blog10/representation.png" alt="SPD与Grassmann乘积流形及因子化空间" /></span>
 
 <p><strong>SPD分支比较直观：先对时序特征求协方差矩阵，</strong></p>
 <p><span class="math display">$$
