@@ -1,299 +1,341 @@
 <style>
-.paper-image-placeholder{display:block;width:100%;box-sizing:border-box;margin:1.5rem 0;padding:2rem 1.25rem;border:2px dashed rgba(120,140,160,.75);border-radius:.5rem;background:rgba(120,140,160,.08);text-align:center;line-height:1.8}.blog-note-box{margin:1.5rem 0;padding:1rem 1.25rem;border-left:4px solid #6f8fa8;background:rgba(111,143,168,.08)}
+    .paper-image-placeholder {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 1.5rem 0;
+        padding: 2rem 1.25rem;
+        border: 2px dashed rgba(120, 140, 160, 0.75);
+        border-radius: 0.5rem;
+        background: rgba(120, 140, 160, 0.08);
+        text-align: center;
+        line-height: 1.8;
+    }
+
+    .paper-image-placeholder code {
+        word-break: break-all;
+    }
+
+    .blog-note-box {
+        margin: 1.5rem 0;
+        padding: 1rem 1.25rem;
+        border-left: 4px solid #6f8fa8;
+        background: rgba(111, 143, 168, 0.08);
+    }
 </style>
-<h2
-id="任务因子化黎曼神经算子跨转速跨负载与跨设备的轴承故障诊断">任务因子化黎曼神经算子：跨转速、跨负载与跨设备的轴承故障诊断</h2>
+
+<h2 class="major blog-title-wrap">
+    任务因子化黎曼神经算子：跨转速、跨负载与跨设备的轴承故障诊断
+</h2>
+
 <div style="display: flex; justify-content: space-between; align-items: center;">
     <a href="#blog9">看看上一篇</a>
     <a href="#work">返回目录</a>
     <a href="#blog_occupy">看看下一篇</a>
 </div>
 
-<!-- <figure>
-<img src="images/blog10/cover.jpg" alt="TF-RiNO论文封面" />
-<figcaption aria-hidden="true">TF-RiNO论文封面</figcaption>
-</figure>
- -->
 <span class="image main"><img src="images/blog10/cover.jpg" alt="TF-RiNO论文封面" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>封面图片占位</b><br>
+    建议使用：论文第1页的标题与摘要区域截图；也可以将论文的整体框架图裁剪为横向封面。<br>
+    建议保存路径：<code>images/blog10/cover.jpg</code>
+</div> -->
 
-<p><strong>Task-Factorized Riemannian Neural Operator for Bearing Fault
-Diagnosis Across Heterogeneous Operational Shifts</strong></p>
-<p><strong>文章已接收于 IEEE Transactions on Reliability，DOI:
-10.1109/TR.2026.3729659</strong></p>
-<p><strong>还是先来谈谈
-motivation：轴承故障诊断已经研究了这么多年，CNN、Transformer、域适应、原型网络、黎曼几何都有人做，为什么还需要再搞一个这么长名字的
-TF-RiNO？<br />
-因为很多现有方法其实默认“域偏移”只有一种。<br />
-比如只研究转速变化，那就想办法消掉转速；只研究负载变化，那就对齐不同负载；只研究不同轴承型号，那就做跨设备迁移。<br />
-可真实工业环境通常不是这么干净的：转速会变、负载会变、轴承型号会变，甚至这些因素还会耦合在一起。</strong></p>
-<p><strong>问题就在这里：同一个故障，在不同工况下的振动表现并不一样。<br />
-外圈故障在低负载下可能很清楚，但换到更高负载、更换一套轴承结构之后，原本稳定的冲击频率、幅值关系、通道相关性都会发生变化。<br />
-模型如果只会记“长什么样”，而不知道“在什么条件下长成这样”，就很容易把工况变化当成故障，或者把故障变化当成工况。</strong></p>
-<p><strong>这篇文章的核心思路可以先用一句话概括：<br />
-不要强行把所有变化都塞进同一个欧氏特征向量里，而是先让网络知道“当前是什么任务、什么工况、什么设备”，再分别建模时域/频域结构、协方差几何、主子空间几何，最后把“真正与故障相关的东西”和“任务相关的干扰因素”拆到两个分支里。</strong></p>
-<blockquote>
-<p><strong>TF-RiNO
-的关键词其实就三个：Condition-aware、Riemannian、Factorized。</strong><br />
-<strong>Condition-aware：网络知道当前是跨转速、跨负载还是跨设备；</strong><br />
-<strong>Riemannian：不只看普通向量，还看 SPD 协方差和 Grassmann
-子空间结构；</strong><br />
-<strong>Factorized：把 fault-shared information 和 task-associated
-nuisance information 分开建模。</strong></p>
-</blockquote>
-<p><strong>先来看整体框架。输入除了源域和目标域的振动信号，还带着速度、负载、设备ID以及当前迁移任务的信息。<br />
-这些元数据先进入 Task Condition Encoder，得到一个 condition
-embedding；随后这个条件向量去调制 Conditional Neural Operator
-Backbone，使同一个骨干网络能根据不同工况改变自己的频谱和时域响应；得到的特征再被提升到
-SPD × Grassmann 乘积流形，最后送入 Task Factorization
-Head，把故障共享信息和任务相关干扰拆开。</strong></p>
+<p><b>Task-Factorized Riemannian Neural Operator for Bearing Fault Diagnosis Across Heterogeneous Operational Shifts</b></p>
+<p><b>文章已接收于 IEEE Transactions on Reliability，DOI: 10.1109/TR.2026.3729659</b></p>
 
-<!-- <figure>
-<img src="images/blog10/overview.png" alt="TF-RiNO整体架构" />
-<figcaption aria-hidden="true">TF-RiNO整体架构</figcaption>
-</figure>
- -->
+<p><b>
+    还是先来谈谈 motivation：轴承故障诊断已经研究了这么多年，CNN、Transformer、域适应、原型网络、黎曼几何都有人做，为什么还需要再搞一个这么长名字的 TF-RiNO？<br>
+    因为很多现有方法其实默认“域偏移”只有一种。<br>
+    比如只研究转速变化，那就想办法消掉转速；只研究负载变化，那就对齐不同负载；只研究不同轴承型号，那就做跨设备迁移。<br>
+    可真实工业环境通常不是这么干净的：转速会变、负载会变、轴承型号会变，甚至这些因素还会耦合在一起。
+</b></p>
+
+<p><b>
+    问题就在这里：同一个故障，在不同工况下的振动表现并不一样。<br>
+    外圈故障在低负载下可能很清楚，但换到更高负载、更换一套轴承结构之后，原本稳定的冲击频率、幅值关系、通道相关性都会发生变化。<br>
+    模型如果只会记“长什么样”，而不知道“在什么条件下长成这样”，就很容易把工况变化当成故障，或者把故障变化当成工况。
+</b></p>
+
+<p><b>
+    这篇文章的核心思路可以先用一句话概括：<br>
+    不要强行把所有变化都塞进同一个欧氏特征向量里，而是先让网络知道“当前是什么任务、什么工况、什么设备”，再分别建模时域/频域结构、协方差几何、主子空间几何，最后把“真正与故障相关的东西”和“任务相关的干扰因素”拆到两个分支里。
+</b></p>
+
+<div class="blog-note-box"><b>
+    TF-RiNO 的关键词其实就三个：Condition-aware、Riemannian、Factorized。<br>
+    Condition-aware：网络知道当前是跨转速、跨负载还是跨设备；<br>
+    Riemannian：不只看普通向量，还看 SPD 协方差和 Grassmann 子空间结构；<br>
+    Factorized：把 fault-shared information 和 task-associated nuisance information 分开建模。
+</b></div>
+
+<p><b>
+    先来看整体框架。输入除了源域和目标域的振动信号，还带着速度、负载、设备ID以及当前迁移任务的信息。<br>
+    这些元数据先进入 Task Condition Encoder，得到一个 condition embedding；随后这个条件向量去调制 Conditional Neural Operator Backbone，使同一个骨干网络能根据不同工况改变自己的频谱和时域响应；得到的特征再被提升到 SPD × Grassmann 乘积流形，最后送入 Task Factorization Head，把故障共享信息和任务相关干扰拆开。
+</b></p>
+
 <span class="image main"><img src="images/blog10/overview.png" alt="TF-RiNO整体架构" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：整体方法框架</b><br>
+    请使用论文中的 TF-RiNO 整体架构图，包括任务条件编码、条件神经算子骨干、SPD × Grassmann 流形提升与任务因子化头。<br>
+    建议保存路径：<code>images/blog10/overview.png</code>
+</div> -->
 
-<p><strong>这里先说明一个很重要的概念：论文虽然用了 Neural Operator
-这个名字，但作者自己也特别强调，这里的“neural
-operator”是架构意义上的。<br />
-它使用有限维的一维 Fourier operator
-网络，在低频模态上做可学习复数通道映射，同时保留一个局部卷积分支。论文并没有建立某个
-PDE，也没有做网格加密下的离散无关性验证，因此它并不声称自己满足经典
-Fourier Neural Operator 那种 mesh-independent PDE operator approximation
-的理论保证。</strong></p>
-<p><strong>这点其实很重要。现在很多文章一看到FFT + learnable spectral
-weights就喜欢叫“神经算子”，但严格来说是否真的在学习某个函数空间之间的算子，是另一回事。<br />
-这篇文章相对克制：它明确说自己只是用 Fourier operator-style
-的架构来做跨条件信号表示，不把概念吹得太满。</strong></p>
-<p><strong>Task Condition Encoder
-负责告诉网络“当前处在什么上下文”。条件向量包含 task
-identity、dataset、device、bearing type、speed 和
-load。离散变量用embedding
-table编码，连续的速度和负载则同时走两条路：一条先bucketize，再做embedding；另一条保留归一化连续数值送进MLP。最后拼接成统一condition
-embedding。</strong></p>
-<p><strong>为什么既要bucket又要连续值？因为bucket很稳，能把近似工况归到同一档；但它会丢掉细微差别。连续支路则保留了“1797
-rpm和1772
-rpm虽然都属于高速区间，但还是不一样”这种细节。两者结合，相当于既有粗粒度工况标签，又保留细粒度连续变化。</strong></p>
-<p><strong>得到condition embedding之后，网络通过类似 FiLM
-的仿射调制来改变中间特征：</strong></p>
-<p><span class="math display">$$
-\tilde{\mathbf{h}}=(1+\gamma)\odot\mathbf{h}+\beta
-$$</span></p>
-<p><strong>其中 () 和 () 都由当前condition
-embedding生成。所以同一个骨干网络面对cross-speed、cross-load和cross-device时，并不是完全“一套参数硬扛到底”，而是在共享主体的前提下，通过条件调制改变响应。</strong></p>
-<p><strong>接下来是所谓的 Conditional Neural Operator
-Backbone。它先用局部一维卷积提取冲击和短时振荡，再进入4个operator
-block。每个block都包含两条互补路径：spectral branch保留低频Fourier
-modes，并在频域用可学习复数矩阵做通道混合；local
-branch则用短核卷积保留局部瞬态。</strong></p>
-<p><span class="math display">$$
-\hat{\mathbf{v}}_{:,m}=\mathbf{W}_m\hat{\mathbf{u}}_{:,m},\quad
-m=1,\ldots,M
-$$</span></p>
-<p><strong>默认设置中，每个operator block保留 (M=32)
-个低频模态，一共4个block。你可以把它理解成：卷积分支负责“这一下撞得像不像故障冲击”，Fourier分支负责“整段信号的频率结构和长程关系像不像”。对轴承振动来说，这两个视角本来就应该同时存在。</strong></p>
-<p><strong>真正有意思的部分在后面：Riemannian Manifold
-Lift。传统深度网络大多把一段信号压成一个欧氏向量，然后在这个向量空间里做分类或域对齐。<br />
-但轴承振动里有两类结构非常重要：一类是通道/特征之间的二阶统计关系，另一类是主导振动模式所在的子空间。所以文章分别用SPD和Grassmann两个流形来描述。</strong></p>
+<p><b>
+    这里先说明一个很重要的概念：论文虽然用了 Neural Operator 这个名字，但作者自己也特别强调，这里的“neural operator”是架构意义上的。<br>
+    它使用有限维的一维 Fourier operator 网络，在低频模态上做可学习复数通道映射，同时保留一个局部卷积分支。论文并没有建立某个 PDE，也没有做网格加密下的离散无关性验证，因此它并不声称自己满足经典 Fourier Neural Operator 那种 mesh-independent PDE operator approximation 的理论保证。
+</b></p>
 
-<!-- <figure>
-<img src="images/blog10/representation.png"
-alt="SPD与Grassmann乘积流形及因子化空间" />
-<figcaption
-aria-hidden="true">SPD与Grassmann乘积流形及因子化空间</figcaption>
-</figure> -->
+<p><b>
+    这点其实很重要。现在很多文章一看到FFT + learnable spectral weights就喜欢叫“神经算子”，但严格来说是否真的在学习某个函数空间之间的算子，是另一回事。<br>
+    这篇文章相对克制：它明确说自己只是用 Fourier operator-style 的架构来做跨条件信号表示，不把概念吹得太满。
+</b></p>
+
+<p><b>
+    Task Condition Encoder 负责告诉网络“当前处在什么上下文”。条件向量包含 task identity、dataset、device、bearing type、speed 和 load。离散变量用embedding table编码，连续的速度和负载则同时走两条路：一条先bucketize，再做embedding；另一条保留归一化连续数值送进MLP。最后拼接成统一condition embedding。
+</b></p>
+
+<p><b>
+    为什么既要bucket又要连续值？因为bucket很稳，能把近似工况归到同一档；但它会丢掉细微差别。连续支路则保留了“1797 rpm和1772 rpm虽然都属于高速区间，但还是不一样”这种细节。两者结合，相当于既有粗粒度工况标签，又保留细粒度连续变化。
+</b></p>
+
+<p><b>
+    得到condition embedding之后，网络通过类似 FiLM 的仿射调制来改变中间特征：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\tilde{\mathbf{h}}=(1+\gamma)\odot\mathbf{h}+\beta\)
+</b></p>
+
+<p><b>
+    其中 \(\gamma\) 和 \(\beta\) 都由当前condition embedding生成。所以同一个骨干网络面对cross-speed、cross-load和cross-device时，并不是完全“一套参数硬扛到底”，而是在共享主体的前提下，通过条件调制改变响应。
+</b></p>
+
+<p><b>
+    接下来是所谓的 Conditional Neural Operator Backbone。它先用局部一维卷积提取冲击和短时振荡，再进入4个operator block。每个block都包含两条互补路径：spectral branch保留低频Fourier modes，并在频域用可学习复数矩阵做通道混合；local branch则用短核卷积保留局部瞬态。
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\hat{\mathbf{v}}_{:,m}=\mathbf{W}_m\hat{\mathbf{u}}_{:,m},\quad m=1,\ldots,M\)
+</b></p>
+
+<p><b>
+    默认设置中，每个operator block保留 \(M=32\) 个低频模态，一共4个block。你可以把它理解成：卷积分支负责“这一下撞得像不像故障冲击”，Fourier分支负责“整段信号的频率结构和长程关系像不像”。对轴承振动来说，这两个视角本来就应该同时存在。
+</b></p>
+
+<p><b>
+    真正有意思的部分在后面：Riemannian Manifold Lift。传统深度网络大多把一段信号压成一个欧氏向量，然后在这个向量空间里做分类或域对齐。<br>
+    但轴承振动里有两类结构非常重要：一类是通道/特征之间的二阶统计关系，另一类是主导振动模式所在的子空间。所以文章分别用SPD和Grassmann两个流形来描述。
+</b></p>
 
 <span class="image main"><img src="images/blog10/representation.png" alt="SPD与Grassmann乘积流形及因子化空间" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：SPD与Grassmann乘积流形及因子化空间</b><br>
+    请使用论文中的流形表示图，展示SPD协方差几何与Grassmann子空间几何如何组合为乘积流形，以及fault-shared与task-specific nuisance两个分支。<br>
+    建议保存路径：<code>images/blog10/representation.png</code>
+</div> -->
 
-<p><strong>SPD分支比较直观：先对时序特征求协方差矩阵，</strong></p>
-<p><span class="math display">$$
-\Sigma=\dfrac{1}{P-1}\tilde{\mathbf{z}}_c\tilde{\mathbf{z}}_c^{\top}+\epsilon\mathbf{I}
-$$</span></p>
-<p><strong>然后通过log-Euclidean映射把SPD矩阵送到切空间：</strong></p>
-<p><span
-class="math display">log (<em>Σ</em>) = <strong>U</strong>log (<em>Λ</em>)<strong>U</strong><sup>⊤</sup></span></p>
-<p><strong>这个分支主要抓的是“不同特征维度之间怎么一起变化”，也就是二阶统计结构。相比单纯依赖幅值，相关结构在跨工况条件下往往更稳。</strong></p>
-<p><strong>Grassmann分支则从同一份特征中做SVD，取前 (r=6)
-个主导左奇异向量形成子空间基 ()，然后用</strong></p>
-<p><span
-class="math display"><strong>G</strong> = <strong>B</strong><strong>B</strong><sup>⊤</sup></span></p>
-<p><strong>作为Grassmann投影表示。这样做的好处是基底怎么旋转并不重要，只要代表的是同一个子空间，(^{})就是一样的。所以SPD关注“协方差几何”，Grassmann关注“主导子空间几何”，两者拼起来得到SPD
-× Grassmann product manifold。</strong></p>
-<p><strong>之后就是 Task Factorization
-Head。文章把流形特征投影成两个分支：fault-shared embedding 和
-task-specific nuisance
-embedding。前者希望保留真正与故障类别有关、跨域稳定的信息；后者则专门吸收speed/load/device造成的变化。</strong></p>
-<p><strong>不过作者也很谨慎：正交损失只能被解释为decorrelation
-surrogate，并不能证明统计独立，更不能证明两个分支是可辨识的真正因果因子。这一点很值得学习。很多论文喜欢把一个orthogonality
-loss写成“disentanglement”，但严格来说，两者之间还差得很远。</strong></p>
-<blockquote>
-<p><strong>这里可以把两条分支理解成：fault-shared
-branch负责回答“轴承到底坏在哪”；nuisance
-branch负责吸收“为什么这次信号看起来和上次不一样——是因为转速、负载还是设备换了”。</strong><br />
-<strong>但它们是训练目标上的分工，不是数学意义上已经完全独立的物理因子。</strong></p>
-</blockquote>
-<p><strong>分类器也不是普通全连接。文章在fault-shared空间里放了每类prototype，并用cosine
-similarity得到prototype logits；同时还保留一个Euclidean
-classifier，两者最后各占一半权重融合。默认每类只用1个prototype，后面的敏感性分析显示2个prototype有一点小提升，但4个并没有稳定更好。</strong></p>
-<p><strong>训练目标比较复杂，一共包含8类loss：classification、prototype
-compactness、task factorization、Riemannian
-compactness、class-conditional alignment、operator consistency、target
-adaptation和meta-device regularization。<br />
-这看起来很多，但它们其实分别对应不同问题：分类要准、原型要紧、两分支别太像、流形里同类要紧、源目标同类要靠近、算子对弱扰动要稳定、目标域要适应、跨设备还要模拟设备间变化。</strong></p>
-<p><strong>特别是cross-device任务，文章没有直接对目标域伪标签做强监督，而是采用一致性正则
-+ entropy
-minimization。原因很简单：设备切换比普通转速/负载变化更严重，早期伪标签很容易错；如果一开始就拿错误伪标签训练，模型可能会越训越偏。所以这里采用了更保守的target
-adaptation。</strong></p>
-<p><strong>数据集方面，文章用了CWRU和HUST。CWRU用于cross-speed和cross-load，HUST则同时用于cross-load和cross-device。HUST包含6204、6205、6206、6207和6208等多种轴承型号，采样频率51.2
-kHz，负载为0 W、200 W和400
-W。四类健康状态统一为Normal、Inner-race、Outer-race和Ball
-fault。</strong></p>
+<p><b>
+    SPD分支比较直观：先对时序特征求协方差矩阵，
+</b></p>
 
-<!-- <figure>
-<img src="images/blog10/dataset_table.png" alt="CWRU与HUST数据集配置" />
-<figcaption aria-hidden="true">CWRU与HUST数据集配置</figcaption>
-</figure> -->
+<p style="text-align: center;"><b>
+    \(\Sigma=\dfrac{1}{P-1}\tilde{\mathbf{z}}_c\tilde{\mathbf{z}}_c^{\top}+\epsilon\mathbf{I}\)
+</b></p>
+
+<p><b>
+    然后通过log-Euclidean映射把SPD矩阵送到切空间：
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\log(\boldsymbol{\Sigma})=\mathbf{U}\log(\boldsymbol{\Lambda})\mathbf{U}^{\top}\)
+</b></p>
+
+<p><b>
+    这个分支主要抓的是“不同特征维度之间怎么一起变化”，也就是二阶统计结构。相比单纯依赖幅值，相关结构在跨工况条件下往往更稳。
+</b></p>
+
+<p><b>
+    Grassmann分支则从同一份特征中做SVD，取前 \(r=6\) 个主导左奇异向量形成子空间基 \(\mathbf{B}\)，然后用
+</b></p>
+
+<p style="text-align: center;"><b>
+    \(\mathbf{G}=\mathbf{B}\mathbf{B}^{\top}\)
+</b></p>
+
+<p><b>
+    作为Grassmann投影表示。这样做的好处是基底怎么旋转并不重要，只要代表的是同一个子空间，\(\mathbf{B}\mathbf{B}^{\top}\)就是一样的。所以SPD关注“协方差几何”，Grassmann关注“主导子空间几何”，两者拼起来得到SPD × Grassmann product manifold。
+</b></p>
+
+<p><b>
+    之后就是 Task Factorization Head。文章把流形特征投影成两个分支：fault-shared embedding 和 task-specific nuisance embedding。前者希望保留真正与故障类别有关、跨域稳定的信息；后者则专门吸收speed/load/device造成的变化。
+</b></p>
+
+<p><b>
+    不过作者也很谨慎：正交损失只能被解释为decorrelation surrogate，并不能证明统计独立，更不能证明两个分支是可辨识的真正因果因子。这一点很值得学习。很多论文喜欢把一个orthogonality loss写成“disentanglement”，但严格来说，两者之间还差得很远。
+</b></p>
+
+<div class="blog-note-box"><b>
+    这里可以把两条分支理解成：fault-shared branch负责回答“轴承到底坏在哪”；nuisance branch负责吸收“为什么这次信号看起来和上次不一样——是因为转速、负载还是设备换了”。<br>
+    但它们是训练目标上的分工，不是数学意义上已经完全独立的物理因子。
+</b></div>
+
+<p><b>
+    分类器也不是普通全连接。文章在fault-shared空间里放了每类prototype，并用cosine similarity得到prototype logits；同时还保留一个Euclidean classifier，两者最后各占一半权重融合。默认每类只用1个prototype，后面的敏感性分析显示2个prototype有一点小提升，但4个并没有稳定更好。
+</b></p>
+
+<p><b>
+    训练目标比较复杂，一共包含8类loss：classification、prototype compactness、task factorization、Riemannian compactness、class-conditional alignment、operator consistency、target adaptation和meta-device regularization。<br>
+    这看起来很多，但它们其实分别对应不同问题：分类要准、原型要紧、两分支别太像、流形里同类要紧、源目标同类要靠近、算子对弱扰动要稳定、目标域要适应、跨设备还要模拟设备间变化。
+</b></p>
+
+<p><b>
+    特别是cross-device任务，文章没有直接对目标域伪标签做强监督，而是采用一致性正则 + entropy minimization。原因很简单：设备切换比普通转速/负载变化更严重，早期伪标签很容易错；如果一开始就拿错误伪标签训练，模型可能会越训越偏。所以这里采用了更保守的target adaptation。
+</b></p>
+
+<p><b>
+    数据集方面，文章用了CWRU和HUST。CWRU用于cross-speed和cross-load，HUST则同时用于cross-load和cross-device。HUST包含6204、6205、6206、6207和6208等多种轴承型号，采样频率51.2 kHz，负载为0 W、200 W和400 W。四类健康状态统一为Normal、Inner-race、Outer-race和Ball fault。
+</b></p>
+
 <span class="image main"><img src="images/blog10/dataset_table.png" alt="CWRU与HUST数据集配置" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：CWRU与HUST数据集配置</b><br>
+    请使用论文中的数据集配置表，展示CWRU与HUST的轴承型号、采样频率、负载与健康状态划分。<br>
+    建议保存路径：<code>images/blog10/dataset_table.png</code>
+</div> -->
 
-<p><strong>接下来看看结果。先看主结果表。<br />
-在当前window-level
-protocol下，CWRU四个cross-load任务和四个cross-speed任务全部达到
-(1.000)。这个数字看起来很夸张，所以论文自己也特别提醒：这不能被解释为“已经证明对未知机器具有完美泛化”，它只说明在当前窗口级协议下这些任务已经饱和。</strong></p>
-<p><strong>HUST就更有区分度了。cross-load中，({0,400})
-W达到1.000，({200,400}) W为 (0.983)，而最难的 ({0,200}) W降到
-(0.923)。这说明目标域如果处在最高负载，分布偏移更明显。</strong></p>
-<p><strong>cross-device才是真正难的。在0 W下，从
-({6205,6206,6207})，TF-RiNO达到 (0.933)
-accuracy；但同样的设备迁移到了200 W，准确率直接降到 (0.740)，macro-F1为
-(0.708)。这说明device shift和load
-shift一旦耦合起来，难度会明显上一个台阶。</strong></p>
-<!-- <figure>
-<img src="images/blog10/main_results.png"
-alt="TF-RiNO跨转速跨负载跨设备主结果" />
-<figcaption
-aria-hidden="true">TF-RiNO跨转速跨负载跨设备主结果</figcaption>
-</figure> -->
+<p><b>
+    接下来看看结果。先看主结果表。<br>
+    在当前window-level protocol下，CWRU四个cross-load任务和四个cross-speed任务全部达到1.000。这个数字看起来很夸张，所以论文自己也特别提醒：这不能被解释为“已经证明对未知机器具有完美泛化”，它只说明在当前窗口级协议下这些任务已经饱和。
+</b></p>
+
+<p><b>
+    HUST就更有区分度了。cross-load中，\(\{0,400\}\) W达到1.000，\(\{200,400\}\) W为0.983，而最难的\(\{0,200\}\) W降到0.923。这说明目标域如果处在最高负载，分布偏移更明显。
+</b></p>
+
+<p><b>
+    cross-device才是真正难的。在0 W下，从\(\{6205,6206,6207\}\)迁移时，TF-RiNO达到0.933 accuracy；但同样的设备迁移到了200 W，准确率直接降到0.740，macro-F1为0.708。这说明device shift和load shift一旦耦合起来，难度会明显上一个台阶。
+</b></p>
+
 <span class="image main"><img src="images/blog10/main_results.png" alt="TF-RiNO跨转速跨负载跨设备主结果" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：跨转速、跨负载与跨设备主结果</b><br>
+    请使用论文中的主结果表，展示TF-RiNO在CWRU与HUST上跨转速、跨负载、跨设备任务的总体准确率与macro-F1。<br>
+    建议保存路径：<code>images/blog10/main_results.png</code>
+</div> -->
 
-<p><strong>再跟基线比。HUST上比较了1D CNN、ResNet1D、DANN、Deep
-CORAL、MMD、SPDNet和ProtoNet。<br />
-在最难的200 W cross-device任务中，SPDNet是最强基线，准确率
-(0.639)；ProtoNet为0.628，DANN为0.618；TF-RiNO则达到0.740。这个提升幅度不小，而且经过Welch
-test + Holm correction之后，0 W和200
-W两个cross-device任务上的提升都达到统计显著。</strong></p>
-<p><strong>不过cross-load就没这么“爽”了。三个HUST cross-load里，只有
-({0,400}) W
-相比SPDNet的提升在Holm校正后显著；另外两个任务虽然均值更高，但统计上不能说已经建立显著优势。这也是文章比较值得肯定的一点：不是看到mean更高就全部写成“significantly
-outperforms”。</strong></p>
-<!-- <figure>
-<img src="images/blog10/baseline_table.png" alt="HUST基线方法对比" />
-<figcaption aria-hidden="true">HUST基线方法对比</figcaption>
-</figure> -->
+<p><b>
+    再跟基线比。HUST上比较了1D CNN、ResNet1D、DANN、Deep CORAL、MMD、SPDNet和ProtoNet。<br>
+    在最难的200 W cross-device任务中，SPDNet是最强基线，准确率0.639；ProtoNet为0.628，DANN为0.618；TF-RiNO则达到0.740。这个提升幅度不小，而且经过Welch test + Holm correction之后，0 W和200 W两个cross-device任务上的提升都达到统计显著。
+</b></p>
+
+<p><b>
+    不过cross-load就没这么“爽”了。三个HUST cross-load里，只有\(\{0,400\}\) W相比SPDNet的提升在Holm校正后显著；另外两个任务虽然均值更高，但统计上不能说已经建立显著优势。这也是文章比较值得肯定的一点：不是看到mean更高就全部写成“significantly outperforms”。
+</b></p>
+
 <span class="image main"><img src="images/blog10/baseline_table.png" alt="HUST基线方法对比" /></span>
-
-<!-- <figure>
-<img src="images/blog10/significance_table.png"
-alt="Welch检验与Holm校正" />
-<figcaption aria-hidden="true">Welch检验与Holm校正</figcaption>
-</figure> -->
 <span class="image main"><img src="images/blog10/significance_table.png" alt="Welch检验与Holm校正" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：基线方法对比与显著性检验</b><br>
+    请使用论文中的基线对比表，以及Welch test + Holm correction的显著性检验结果表。<br>
+    建议保存路径：<code>images/blog10/baseline_table.png</code>、<code>images/blog10/significance_table.png</code>
+</div> -->
 
-<p><strong>然后是一个非常现实的问题：性能是不是“免费”来的？不是。<br />
-在同一张GTX 1050 Ti上做matched profiling，TF-RiNO有3.947M参数、1.370
-GFLOPs，训练计算时间约112.02 min，batch-1推理约19.09
-ms/sample。相比之下，DANN只有0.140M参数、0.050 GFLOPs，推理1.63
-ms；SPDNet也只有4.55
-ms。所以TF-RiNO的准确率优势是用更高计算成本换来的，而不是“又快又准又省”。</strong></p>
-<!-- <figure>
-<img src="images/blog10/efficiency.png" alt="性能与效率对比" />
-<figcaption aria-hidden="true">性能与效率对比</figcaption>
-</figure> -->
+<p><b>
+    然后是一个非常现实的问题：性能是不是“免费”来的？不是。<br>
+    在同一张GTX 1050 Ti上做matched profiling，TF-RiNO有3.947M参数、1.370 GFLOPs，训练计算时间约112.02 min，batch-1推理约19.09 ms/sample。相比之下，DANN只有0.140M参数、0.050 GFLOPs，推理1.63 ms；SPDNet也只有4.55 ms。所以TF-RiNO的准确率优势是用更高计算成本换来的，而不是“又快又准又省”。
+</b></p>
+
 <span class="image main"><img src="images/blog10/efficiency.png" alt="性能与效率对比" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：性能与效率对比</b><br>
+    请使用论文中的效率对比表，展示TF-RiNO与基线方法的参数量、FLOPs、训练时间与推理延迟。<br>
+    建议保存路径：<code>images/blog10/efficiency.png</code>
+</div> -->
 
-<p><strong>这篇文章还有一个非常值得单独说的地方：作者后来审计了数据划分，发现原始window-level
-split存在明显的raw-sample overlap。由于窗口长度2048、stride
-1024，相邻窗口本身就有50%重叠，再随机切分train/val/test，就可能让原始波形片段同时出现在训练和测试窗口中。审计结果显示，easy和hard
-cross-device任务中，target-test窗口与target-train/validation窗口共享原始样本的比例分别达到96.7%和94.7%。</strong></p>
-<p><strong>这就意味着：原始协议虽然没有直接用target-test
-label训练，但仍然不能被称为waveform-disjoint。所以论文进一步做了更严格的block-disjoint
-split，加guard interval，并且去掉target-validation
-selection，只用source/unsupervised criterion选模型。</strong></p>
-<p><strong>严格协议下，easy/hard cross-device准确率变成 (0.872) 和
-(0.632)。这两个数字比原来的0.933和0.740低不少，但反而更有参考价值，因为它告诉我们：原来那些很漂亮的数值里，确实有一部分来自更宽松的窗口划分和模型选择协议。</strong></p>
-<blockquote>
-<p><strong>这一部分其实比“再提高1%的准确率”更值得注意。</strong><br />
-<strong>时序信号使用滑窗时，如果先切窗再随机划分，很容易造成隐性泄漏。真正严格的评估应该尽量按原始recording/block划分，并在边界处留guard
-interval，避免相邻重叠窗口跨集合。</strong></p>
-</blockquote>
-<p><strong>再来看消融实验。CWRU
-cross-speed中，Full是1.000；去掉factorization降到0.982；只保留SPD分支是0.975；去掉operator则降到0.941。<br />
-HUST 0 W cross-device里，Full为0.933，SPD-only为0.914，w/o
-factorization为0.870，而w/o
-operator直接掉到0.437。这个结果很清楚：在复杂设备迁移里，condition-aware
-operator backbone是最核心的部分，product
-manifold和factorization则进一步改善稳定性。</strong></p>
-<!-- <figure>
-<img src="images/blog10/ablation.png"
-alt="模块消融严格协议与敏感性分析" />
-<figcaption aria-hidden="true">模块消融严格协议与敏感性分析</figcaption>
-</figure> -->
+<p><b>
+    这篇文章还有一个非常值得单独说的地方：作者后来审计了数据划分，发现原始window-level split存在明显的raw-sample overlap。由于窗口长度2048、stride 1024，相邻窗口本身就有50%重叠，再随机切分train/val/test，就可能让原始波形片段同时出现在训练和测试窗口中。审计结果显示，easy和hard cross-device任务中，target-test窗口与target-train/validation窗口共享原始样本的比例分别达到96.7%和94.7%。
+</b></p>
+
+<p><b>
+    这就意味着：原始协议虽然没有直接用target-test label训练，但仍然不能被称为waveform-disjoint。所以论文进一步做了更严格的block-disjoint split，加guard interval，并且去掉target-validation selection，只用source/unsupervised criterion选模型。
+</b></p>
+
+<p><b>
+    严格协议下，easy/hard cross-device准确率变成0.872和0.632。这两个数字比原来的0.933和0.740低不少，但反而更有参考价值，因为它告诉我们：原来那些很漂亮的数值里，确实有一部分来自更宽松的窗口划分和模型选择协议。
+</b></p>
+
+<div class="blog-note-box"><b>
+    这一部分其实比“再提高1%的准确率”更值得注意。<br>
+    时序信号使用滑窗时，如果先切窗再随机划分，很容易造成隐性泄漏。真正严格的评估应该尽量按原始recording/block划分，并在边界处留guard interval，避免相邻重叠窗口跨集合。
+</b></div>
+
+<p><b>
+    再来看消融实验。CWRU cross-speed中，Full是1.000；去掉factorization降到0.982；只保留SPD分支是0.975；去掉operator则降到0.941。<br>
+    HUST 0 W cross-device里，Full为0.933，SPD-only为0.914，w/o factorization为0.870，而w/o operator直接掉到0.437。这个结果很清楚：在复杂设备迁移里，condition-aware operator backbone是最核心的部分，product manifold和factorization则进一步改善稳定性。
+</b></p>
+
 <span class="image main"><img src="images/blog10/ablation.png" alt="模块消融严格协议与敏感性分析" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文表格占位：模块消融、严格协议与敏感性分析</b><br>
+    请使用论文中的消融实验结果表，以及严格block-disjoint协议下的结果与超参数敏感性分析。<br>
+    建议保存路径：<code>images/blog10/ablation.png</code>
+</div> -->
 
-<p><strong>Table V里还有几个小结论。condition
-bucket用32/16是比较稳的，换成更粗或更细不会明显更好；prototype从1个变2个有轻微提升，变4个反而不稳定；Grassmann用full
-projection、principal-angle或者geodesic，精度差别不大。这说明默认设置不是唯一“神参数”，很多附近配置都能工作。</strong></p>
-<p><strong>然后看hard task到底错在哪里。per-class F1里，easy 0
-W时四类都比较均衡，Normal、Inner和Outer都接近0.93–0.96。但到了200 W hard
-setting，Outer-race的F1掉得最厉害，成为主要错误来源；Ball
-fault反而依旧比较稳。</strong></p>
-<!-- <figure>
-<img src="images/blog10/classwise.png"
-alt="Easy与Hard跨设备任务逐类F1" />
-<figcaption aria-hidden="true">Easy与Hard跨设备任务逐类F1</figcaption>
-</figure> -->
+<p><b>
+    Table V里还有几个小结论。condition bucket用32/16是比较稳的，换成更粗或更细不会明显更好；prototype从1个变2个有轻微提升，变4个反而不稳定；Grassmann用full projection、principal-angle或者geodesic，精度差别不大。这说明默认设置不是唯一“神参数”，很多附近配置都能工作。
+</b></p>
+
+<p><b>
+    然后看hard task到底错在哪里。per-class F1里，easy 0 W时四类都比较均衡，Normal、Inner和Outer都接近0.93–0.96。但到了200 W hard setting，Outer-race的F1掉得最厉害，成为主要错误来源；Ball fault反而依旧比较稳。
+</b></p>
+
 <span class="image main"><img src="images/blog10/classwise.png" alt="Easy与Hard跨设备任务逐类F1" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：Easy与Hard跨设备任务逐类F1</b><br>
+    请使用论文中的逐类F1对比图，展示easy 0 W与hard 200 W两个跨设备任务下四类健康状态的F1差异。<br>
+    建议保存路径：<code>images/blog10/classwise.png</code>
+</div> -->
 
-<p><strong>混淆矩阵看得更明显：hard
-setting里，大量Outer-race被错分成Inner-race，Normal也有一部分被混到Outer-race。这说明负载和设备变化共同压缩了Outer-race附近的几何margin，使得原本相邻的Inner/Outer两类在迁移后更难区分。</strong></p>
-<!-- <figure>
-<img src="images/blog10/confusion.png"
-alt="Easy与Hard跨设备任务混淆矩阵" />
-<figcaption aria-hidden="true">Easy与Hard跨设备任务混淆矩阵</figcaption>
-</figure> -->
+<p><b>
+    混淆矩阵看得更明显：hard setting里，大量Outer-race被错分成Inner-race，Normal也有一部分被混到Outer-race。这说明负载和设备变化共同压缩了Outer-race附近的几何margin，使得原本相邻的Inner/Outer两类在迁移后更难区分。
+</b></p>
+
 <span class="image main"><img src="images/blog10/confusion.png" alt="Easy与Hard跨设备任务混淆矩阵" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：Easy与Hard跨设备任务混淆矩阵</b><br>
+    请使用论文中的混淆矩阵图，对比easy 0 W与hard 200 W两个跨设备任务下的分类错误模式。<br>
+    建议保存路径：<code>images/blog10/confusion.png</code>
+</div> -->
 
-<p><strong>最后再看embedding。论文用t-SNE展示0 W easy和200 W
-hard两个cross-device任务，同时在原始128维fault-shared
-embedding里算了三个指标：class silhouette、domain silhouette和normalized
-domain gap。easy task分别是0.857、0.002和0.013；hard
-task变成0.658、0.068和0.266。也就是说，hard
-task不仅类别之间分得更差，source和target之间的残余domain
-offset也明显变大。</strong></p>
-<!-- <figure>
-<img src="images/blog10/embedding.png"
-alt="Fault-shared embedding可视化" />
-<figcaption aria-hidden="true">Fault-shared embedding可视化</figcaption>
-</figure> -->
+<p><b>
+    最后再看embedding。论文用t-SNE展示0 W easy和200 W hard两个cross-device任务，同时在原始128维fault-shared embedding里算了三个指标：class silhouette、domain silhouette和normalized domain gap。easy task分别是0.857、0.002和0.013；hard task变成0.658、0.068和0.266。也就是说，hard task不仅类别之间分得更差，source和target之间的残余domain offset也明显变大。
+</b></p>
+
 <span class="image main"><img src="images/blog10/embedding.png" alt="Fault-shared embedding可视化" /></span>
+<!-- <div class="paper-image-placeholder">
+    <b>论文图片占位：Fault-shared embedding可视化</b><br>
+    请使用论文中的t-SNE可视化图，展示easy与hard跨设备任务下fault-shared embedding的类间与域间分布。<br>
+    建议保存路径：<code>images/blog10/embedding.png</code>
+</div> -->
 
-<p><strong>所以综合来看，这篇文章真正想解决的，并不是“再设计一个更大的故障诊断网络”，而是怎么用同一个框架去应对三类不同性质的shift。转速和负载更多是operating-condition
-shift，设备变化则会带来更强的structural shift。TF-RiNO通过condition
-modulation、Fourier+local operator、SPD×Grassmann几何和fault/nuisance
-factorization，把这几层变化拆开处理。</strong></p>
-<p><strong>但它也有几个非常明确的限制。第一，严格block-disjoint协议下hard
-task只有0.632 accuracy，距离真正安全关键部署还很远；第二，对未见6204
-bearing做source-only迁移时，easy/hard也只有0.790和0.575，说明zero-shot
-equipment generalization仍然有限；第三，hard task的confidence
-calibration并不好，ECE约0.232，在80% coverage下selective
-accuracy也只有0.795；第四，TF-RiNO明显更重、更慢，后续必须做模型压缩和更高效的流形实现。</strong></p>
-<p><strong>所以我个人更愿意把TF-RiNO看成一种“结构化迁移诊断”的探索：与其把所有domain
-shift都当成一个黑箱分布差异然后做global
-alignment，不如显式告诉模型“到底是什么条件在变”，再分别建模频谱结构、协方差几何、子空间几何和任务干扰。这种思路可能比单纯堆一个更大的backbone更适合真正复杂的跨工况、跨设备诊断。</strong></p>
-<p><strong>以上就是这篇文章的主要内容。<br />
-如果你关注cross-domain fault diagnosis、Riemannian learning、neural
-operator或者工业设备迁移学习，这篇文章的价值不只在于最终精度，也在于它比较完整地展示了如何同时讨论性能、显著性、数据泄漏、严格协议、类级失败模式和计算代价。<br />
-如果相关内容对你的研究有帮助，也欢迎引用这项工作。</strong></p>
+<p><b>
+    所以综合来看，这篇文章真正想解决的，并不是“再设计一个更大的故障诊断网络”，而是怎么用同一个框架去应对三类不同性质的shift。转速和负载更多是operating-condition shift，设备变化则会带来更强的structural shift。TF-RiNO通过condition modulation、Fourier+local operator、SPD×Grassmann几何和fault/nuisance factorization，把这几层变化拆开处理。
+</b></p>
+
+<p><b>
+    但它也有几个非常明确的限制。第一，严格block-disjoint协议下hard task只有0.632 accuracy，距离真正安全关键部署还很远；第二，对未见6204 bearing做source-only迁移时，easy/hard也只有0.790和0.575，说明zero-shot equipment generalization仍然有限；第三，hard task的confidence calibration并不好，ECE约0.232，在80% coverage下selective accuracy也只有0.795；第四，TF-RiNO明显更重、更慢，后续必须做模型压缩和更高效的流形实现。
+</b></p>
+
+<p><b>
+    所以我个人更愿意把TF-RiNO看成一种“结构化迁移诊断”的探索：与其把所有domain shift都当成一个黑箱分布差异然后做global alignment，不如显式告诉模型“到底是什么条件在变”，再分别建模频谱结构、协方差几何、子空间几何和任务干扰。这种思路可能比单纯堆一个更大的backbone更适合真正复杂的跨工况、跨设备诊断。
+</b></p>
+
+<p><b>
+    以上就是这篇文章的主要内容。<br>
+    如果你关注cross-domain fault diagnosis、Riemannian learning、neural operator或者工业设备迁移学习，这篇文章的价值不只在于最终精度，也在于它比较完整地展示了如何同时讨论性能、显著性、数据泄漏、严格协议、类级失败模式和计算代价。<br>
+    如果相关内容对你的研究有帮助，也欢迎引用这项工作。
+</b></p>
 
 <div style="display: flex; justify-content: space-between; align-items: center;">
     <a href="#blog9">看看上一篇</a>
