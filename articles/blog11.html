@@ -1,0 +1,246 @@
+<style>
+.paper-image-placeholder{display:block;width:100%;box-sizing:border-box;margin:1.5rem 0;padding:2rem 1.25rem;border:2px dashed rgba(120,140,160,.75);border-radius:.5rem;background:rgba(120,140,160,.08);text-align:center;line-height:1.8}
+.paper-image-placeholder code{word-break:break-all}
+.blog-note-box{margin:1.5rem 0;padding:1rem 1.25rem;border-left:4px solid #6f8fa8;background:rgba(111,143,168,.08)}
+</style>
+
+<h2 class="major blog-title-wrap">奇异谱分析-扩散模型预测控制：让AUV预测高频海浪扰动</h2>
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<a href="#blog10">看看上一篇</a><a href="#work">返回目录</a><a href="#blog_occupy">看看下一篇</a>
+</div>
+
+<span class="image main"><img src="images/blog11/cover.jpg" alt="S2D-MPC论文封面" /></span>
+<!-- 图片占位：建议使用论文第1页标题与摘要区域截图；或将 Fig. 1 裁剪为横向封面。建议保存路径：images/blog11/cover.jpg -->
+
+<p><b>Saturated Precise Robust Singular Spectrum Analysis-Diffusion Model Predictive Control of AUVs</b></p>
+<p><b>文章发表在 IEEE Transactions on Cybernetics，DOI: 10.1109/TCYB.2026.3731311</b></p>
+
+<p><b>
+还是先来谈谈 motivation：AUV 在海里遇到扰动，为什么不能直接上一个 Disturbance Observer，然后让控制器把扰动抵消掉？<br>
+因为“看到扰动”和“来得及抵消扰动”其实是两回事。<br>
+传统 DOB、ESO 这一类观测器，本质上还是根据已经发生的运动误差去反推外界扰动。海浪先把 AUV 推了一下，传感器看到状态偏了，观测器再估计“刚才大概有这么一股力”。<br>
+对缓慢海流来说问题不大，但如果扰动频率越来越高，这种因果链条天然就会带来 phase lag。
+</b></p>
+
+<p><b>
+那么是不是干脆预测未来的扰动，然后提前补偿？方向是对的，但马上又会碰到第二个问题：不是所有预测出来的高频成分都值得、甚至都能够去抵消。<br>
+AUV有质量、有附加质量、有水动力阻尼，推进器也有自己的响应速度。模型哪怕准确预测出了一个特别快的波动力，如果艇体和执行器根本跟不上，你还让MPC硬追，结果很可能是推力快速抖动、饱和、磨损增加，甚至激发未建模动态。
+</b></p>
+
+<p><b>
+所以这篇文章真正想解决的是一个很典型的 information-action mismatch：一方面，控制器需要比传统反馈观测更早地知道扰动会怎么变化；另一方面，它还必须判断“这些未来信息里，哪些是物理上真正可执行的”。最后才能把这些信息送进受约束MPC。
+</b></p>
+
+<div class="blog-note-box"><b>
+可以先把整篇文章压缩成一句话：<br>
+S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本来不及抵消的那部分”，MPC负责“在推力和状态约束下决定到底怎么动”。
+</b></div>
+
+<p><b>
+于是作者提出了 S2D-MPC：Singular Spectrum Analysis-Diffusion Model Predictive Control。<br>
+整套系统不是“扩散模型 + MPC”的简单串联，而是一个 perception-prediction-decision-action 闭环：Kalman Filter负责从状态创新中估计当前扰动；SSA把历史扰动拆成趋势和残差；扩散模型只预测更难的非平稳残差；DIAF再做饱和和带宽筛选；最后MPC使用经过物理筛选的未来扰动序列做前馈优化。
+</b></p>
+
+<span class="image main"><img src="images/blog11/framework.png" alt="S2D-MPC闭环预测补偿架构" /></span>
+<!-- 图片占位：使用论文 Fig. 1：Closed-loop perception-prediction-decision-action architecture for AUV path following（论文第4页）。建议保存路径：images/blog11/framework.png -->
+
+<p><b>
+在正式讲算法之前，先看看文章到底在模拟什么扰动。AUV的总外扰被拆成两部分：
+</b></p>
+<p style="text-align:center;"><b>\(\tau_{\mathrm{ext}}(t)=\tau_{\mathrm{cur}}(t)+\tau_{\mathrm{wave}}(t)\)</b></p>
+
+<p><b>
+其中海流是慢变化项，海浪则是高频振荡项。文章使用 JONSWAP 波谱描述海浪能量分布，再通过二阶 shaping filter 把频域谱转换成时域波浪力。<br>
+这个设置比直接“随便加一个正弦波”合理得多，因为真正的问题恰恰是：海浪扰动既有主要频率，又包含宽频随机成分，而且其变化时间尺度可能已经接近AUV闭环响应速度。
+</b></p>
+
+<p><b>现在先看 S2D Observer。它实际上分成五步，论文 Fig. 2 把整条信息流画得很清楚。</b></p>
+
+<span class="image main"><img src="images/blog11/s2d_observer.png" alt="S2D预测观测器信息流" /></span>
+<!-- 图片占位：使用论文 Fig. 2：Information flow through the proposed S2D predictive observer（论文第4页）。建议保存路径：images/blog11/s2d_observer.png -->
+
+<p><b>
+第一步还是很经典：Kalman Filter先给出 instantaneous disturbance estimate。文章把未知扰动扩展进状态向量，并在局部线性化模型里把它近似成采样间隔内的随机游走。KF每次根据状态预测和实际测量之间的innovation，更新当前扰动估计。<br>
+这一步解决的是“此刻外面大概在推我多少”，但它仍然是反馈驱动的，所以还没有解决相位滞后。
+</b></p>
+
+<p><b>
+第二步开始比较有意思：SSA，也就是 Singular Spectrum Analysis。文章并没有让扩散模型直接吞掉整个宽频扰动，而是先把最近一段KF估计做奇异谱分解，把它拆成 trend 和 residual：
+</b></p>
+<p style="text-align:center;"><b>\(\hat d_t^{\mathrm{inst}}=\hat d_t^{\mathrm{tr}}+\hat d_t^{\mathrm{res}}\)</b></p>
+
+<p><b>
+为什么要这么拆？因为慢趋势其实没必要用生成模型。像海流漂移、波浪包络这类比较平滑的成分，用一个低阶多项式外推就能做得很好；真正难的是那些高频、非平稳、难以直接外推的 residual。<br>
+所以这里相当于先把简单题从卷子里拿走，只把难题交给扩散模型。
+</b></p>
+
+<p><b>
+第三步，trend 用确定性的 polynomial regression 直接外推到整个 MPC horizon。第四步，residual 才交给 conditional diffusion。<br>
+但文章又没有照搬完整DDPM逐步反演，而是做了两个改动：SSA projection + skip-step sampling。
+</b></p>
+
+<span class="image main"><img src="images/blog11/skip_diffusion.png" alt="SSA引导的跳步扩散采样" /></span>
+<!-- 图片占位：使用论文 Fig. 3：SSA-guided skip-step diffusion sampling for residual prediction（论文第5页）。建议保存路径：images/blog11/skip_diffusion.png -->
+
+<p><b>
+普通扩散反演的问题大家都知道：一步一步从 \(x_T\) 走回 \(x_0\)，效果可以很好，但是控制系统没那么多时间等。于是这里采用 strided reverse schedule，隔几个step跳一次。<br>
+但直接跳步又容易让中间预测脱离最近历史信号的低秩时间结构，所以每次反演之后，再用SSA reconstruction把临时预测投影回最近观测支持的子空间。
+</b></p>
+
+<p><b>
+可以粗略理解成：扩散模型负责想象未来 residual 可能怎么变化，SSA则像一个教练，每走几步就把它拽回来：“别瞎跑，最近这段信号的主要结构是这样的。”<br>
+这样既保留随机残差的表达能力，又能把reverse steps大约减少到原来的 \(1/k\)。
+</b></p>
+
+<p><b>
+预测完成以后还有第五步：Anchoring and Saturation。这是文章非常重要的一层安全设计。扩散模型毕竟是学习模型，遇到OOD输入时不能保证预测误差有硬上界。<br>
+所以最终forecast在进入控制器之前先被限制到一个物理允许的扰动集合：
+</b></p>
+<p style="text-align:center;"><b>\(\hat d_{k+i}^{\mathrm{raw}}=\mathrm{sat}_{\mathcal D}(\hat d_{k+i}^{\mathrm{tr}}+\hat r_{k+i})\)</b></p>
+
+<p><b>
+也就是说，就算扩散模型突然“发疯”，输出一个离谱的大扰动力，feedforward通道也不会无限放大。<br>
+这并不能让神经网络突然拥有严格预测保证，但它能保证控制器看到的扰动预测不会突破预先定义的环境物理边界。
+</b></p>
+
+<div class="blog-note-box"><b>
+这一层的意义很像：学习模型负责给建议，物理饱和负责兜底。<br>
+它没有证明扩散模型永远预测正确，而是保证“即使它错得很离谱，也不能把一个无限大的命令直接送进控制器”。
+</b></div>
+
+<p><b>
+接下来就是 DIAF：Dynamics-Informed Adaptive Filter。这是整篇文章里我认为很有工程味道的一部分。<br>
+很多“预测扰动 + 前馈补偿”的工作容易忽略一件事：你预测得越精细，不代表控制器就应该跟得越精细。艇体和推进器是有带宽的。
+</b></p>
+
+<span class="image main"><img src="images/blog11/diaf.png" alt="Dynamics-Informed Adaptive Filter结构" /></span>
+<!-- 图片占位：使用论文 Fig. 4：Schematic of the proposed DIAF（论文第5页）。建议保存路径：images/blog11/diaf.png -->
+
+<p><b>文章先用一个简单但很直观的系统时间常数来描述AUV的响应能力：</b></p>
+<p style="text-align:center;"><b>\(T_{\mathrm{sys}}=\dfrac{m_{\mathrm{eff}}}{d_{\mathrm{lin}}+\epsilon}\)</b></p>
+
+<p><b>
+对应的特征带宽大约就是 \(\omega_{\mathrm{sys}}\approx1/T_{\mathrm{sys}}\)。然后再计算预测residual在整个horizon上的平均变化速率 \(V_k\)，并除以由最大推力和有效质量得到的可实现变化上限 \(V_{\mathrm{lim}}\)，得到：
+</b></p>
+<p style="text-align:center;"><b>\(\gamma_k=\dfrac{V_k}{V_{\mathrm{lim}}}\)</b></p>
+
+<p><b>
+如果 \(\gamma_k<1\)，说明未来扰动变化还在执行器可处理范围内；如果 \(\gamma_k>1\)，说明预测扰动已经变化得比AUV能够积极抵消的速度更快。于是DIAF用一个sigmoid transparency factor：
+</b></p>
+<p style="text-align:center;"><b>\(\lambda_k=\dfrac{1}{1+\exp(\kappa(\gamma_k-1))}\)</b></p>
+
+<p><b>
+当扰动变化慢，\(\lambda_k\rightarrow1\)，尽量保留预测；当变化太快，\(\lambda_k\rightarrow0\)，就强烈平滑。<br>
+最有意思的是，这个filter不是对“过去的测量”做因果滤波，而是沿着“已经预测出来的未来序列”做非因果平滑。所以它可以降低未来序列里的高频成分，却不会像普通在线低通滤波那样再额外引入起始相位延迟。
+</b></p>
+
+<p><b>
+这就解决了前面那个矛盾：S2D负责把信息从“滞后”变成“领先”；DIAF再确保这种领先信息不会诱导控制器去追那些物理上跟不上的频率。
+</b></p>
+
+<p><b>
+最后，经过DIAF处理的 horizonwise disturbance sequence 进入MPC。与很多把未来扰动假设成0或者常数的MPC不同，这里每一个预测步都带有不同的 \(\hat d_{k+i|k}\)。<br>
+优化器因此可以在真正的海浪力作用到状态误差之前，就提前分配一部分控制努力。
+</b></p>
+
+<p><b>
+当然，控制论文不能只说“仿真看起来挺好”，还要说明闭环会不会炸。文章没有声称误差严格收敛到0，因为预测误差和DIAF刻意丢掉的高频成分都不可避免。<br>
+因此证明的是 RISPS：Regional Input-to-State Practical Stability。
+</b></p>
+
+<p><b>核心思路是把总disturbance mismatch拆成两部分：</b></p>
+<p style="text-align:center;"><b>\(\epsilon_k=\epsilon_{\mathrm{est},k}+\epsilon_{\mathrm{filt},k}\)</b></p>
+
+<p><b>
+前者是S2D的预测误差，后者是DIAF为了带宽可实现性而有意产生的filtering mismatch。用MPC最优值函数作为Lyapunov函数，可以得到一个practical convergence radius，其大小与 \(\bar\epsilon_{\mathrm{est}}+\bar\epsilon_{\mathrm{filt}}\) 有关。<br>
+所以预测越准，第一项越小；筛掉越多高频，第二项会变大，但这些被筛掉的成分本来就在艇体带宽之外，对实际位移的影响会被动力学自然衰减。
+</b></p>
+
+<p><b>
+接下来看看实验。文章采用AUV六自由度模型，并在测试时故意制造model-plant mismatch：惯性矩阵 \(M\) 增加20%，阻尼矩阵 \(D\) 增加15%；同时测试扰动相对训练生成器额外加入50 N偏置，并把幅值乘以1.1。<br>
+也就是说，不是拿训练时一模一样的环境做“背答案式”测试。
+</b></p>
+
+<span class="image main"><img src="images/blog11/model_params.png" alt="AUV模型参数表" /></span>
+<!-- 表格占位：使用论文 Table I：AUV model parameters（论文第8页）。建议保存路径：images/blog11/model_params.png -->
+
+<p><b>
+对比方法包括 Standard MPC、NDO-MPC、ESO-MPC 和 S2D-MPC。最直观的结果在 Fig. 5：Standard MPC根本没有显式扰动信息，所以误差最大；NDO和ESO能改善，但估计曲线明显滞后于高频JONSWAP扰动；S2D则因为直接给出未来horizon预测，在相位上明显更贴近真实扰动。
+</b></p>
+
+<span class="image main"><img src="images/blog11/error_estimation.png" alt="横向跟踪误差与扰动估计结果" /></span>
+<!-- 图片占位：使用论文 Fig. 5：Cross-track error and disturbance estimation under the high-frequency JONSWAP disturbance d_omega2（论文第8页）。建议保存路径：images/blog11/error_estimation.png -->
+
+<p><b>
+再看一个最简单粗暴的指标：Integrated Absolute Error。S2D-MPC总IAE只有2.09 m·s，是四种方法中最低的。<br>
+这个改善不是单独由“扩散模型预测更准”带来的，而是三个机制叠加：SSA把趋势和随机残差分开、diffusion提供phase-leading residual prediction、DIAF阻止MPC浪费控制能力去追不可执行的高频成分。
+</b></p>
+
+<span class="image main"><img src="images/blog11/iae.png" alt="不同控制方法的总IAE" /></span>
+<!-- 图片占位：使用论文 Fig. 6：Total integrated absolute error under d_omega2（论文第9页）。建议保存路径：images/blog11/iae.png -->
+
+<p><b>
+轨迹图也能看出类似结论。Standard MPC偏离最明显，NDO/ESO虽然收回来不少，但在高频扰动峰值附近依然存在更大的横向偏移；S2D-MPC整体更贴近参考路径。
+</b></p>
+
+<span class="image main"><img src="images/blog11/trajectory.png" alt="JONSWAP扰动下路径跟踪轨迹" /></span>
+<!-- 图片占位：使用论文 Fig. 7：Path-following trajectories under d_omega2，包含局部放大图（论文第9页）。建议保存路径：images/blog11/trajectory.png -->
+
+<p><b>
+然后是一个控制+生成模型工作绕不开的问题：实时性能不能跑？<br>
+论文用Python统计每个控制步的计算时间。平均下来，MPC占23.65 ms，S2D observer约9.58 ms，整套系统平均33.25 ms。采样周期是50 ms，所以从平均值来看是可以实时运行的。
+</b></p>
+
+<p><b>
+但这里不能只看平均值。最大step time达到66.36 ms，已经超过一个50 ms采样周期。<br>
+所以文章的表述也比较谨慎：当前Python实现证明的是 average real-time feasibility，而不是 hard real-time deadline guarantee。真正上艇还需要compiled implementation、实时调度和HIL profiling。
+</b></p>
+
+<span class="image main"><img src="images/blog11/runtime_table.png" alt="各模块每控制步计算时间" /></span>
+<!-- 表格占位：使用论文 Table II：Computation time per control step（论文第9页）。建议保存路径：images/blog11/runtime_table.png -->
+
+<p><b>
+再来看参数敏感性。论文同时扫了SSA窗口长度 \(L\) 和diffusion skip factor \(k\)。9种组合的IAE只在2.061–2.109 m·s之间变化，说明控制效果对这几个参数没有特别敏感。<br>
+真正变化比较明显的是计算时间：\(k\) 从2增大到10以后，observer time大概从21 ms降到4.7 ms。默认的 \(L=10,k=5\) 是一个折中点，observer大约8.6 ms，IAE为2.098 m·s。
+</b></p>
+
+<span class="image main"><img src="images/blog11/sensitivity_table.png" alt="SSA窗口长度和扩散跳步因子敏感性" /></span>
+<!-- 表格占位：使用论文 Table III：Sensitivity to SSA window length and diffusion skip factor（论文第9页）。建议保存路径：images/blog11/sensitivity_table.png -->
+
+<p><b>
+最后作者又把海况从mild一路推到extreme：mild为 \(H_s=2\) m、\(\omega_p=1.5\) rad/s；harsh为5 m、3.0 rad/s；extreme为8 m、5.0 rad/s。<br>
+Standard MPC始终误差最大；NDO和ESO随着波高和主频上升逐渐恶化；S2D-MPC的IAE则维持在2.054–2.136 m·s之间。
+</b></p>
+
+<span class="image main"><img src="images/blog11/sea_states.png" alt="不同JONSWAP海况下IAE对比" /></span>
+<!-- 图片占位：使用论文 Fig. 8：Total IAE under the three tested JONSWAP sea states（论文第10页）。建议保存路径：images/blog11/sea_states.png -->
+
+<p><b>
+综合来看，这篇工作的重点其实并不只是“用Diffusion预测海浪”。如果只是换一个预测器，然后把输出原封不动塞进MPC，这件事很容易变成纯方法组合。<br>
+真正比较完整的地方在于：它明确处理了三个连续问题——怎么把滞后的反馈估计变成phase-leading forecast、怎么让生成预测服从物理边界和带宽、以及怎么把剩下真正可执行的信息放进受约束MPC。
+</b></p>
+
+<p><b>
+也就是说，这篇文章试图把“AI预测器”从控制器外面的外挂模块，变成闭环信息流中的一环。学习模型负责预测，SSA负责结构先验，饱和负责最坏情况下的边界，DIAF负责物理可实现性，MPC负责约束优化，RISPS再把剩余误差如何进入闭环稳定域说清楚。
+</b></p>
+
+<p><b>
+不过限制也很明确。第一，目前证据仍然是simulation-based，还没有HIL或真实海试；第二，JONSWAP + shaping filter虽然比简单正弦扰动合理很多，但和真实海域CFD/实测六维波浪力仍有差距；<br>
+第三，最大计算时间已经超过50 ms硬截止时间，因此当前Python实现还不能直接宣称onboard hard real-time；第四，saturation保证的是预测输入不会无限越界，并不等于扩散模型在所有OOD海况下都能保持高预测精度。
+</b></p>
+
+<p><b>
+所以我个人更愿意把这篇工作理解成一种“生成式预测 + 物理筛选 + 约束控制”的范式：不要求神经网络独自解决控制问题，而是让它专门做擅长的未来信息预测；然后用明确的系统动力学、执行器带宽和约束把预测变成真正可执行的控制信息。<br>
+对于AUV、无人船、四足机器人，甚至其他受到高频外扰的机电系统，这种思路都比“生成模型直接输出控制量”更有工程吸引力。
+</b></p>
+
+<p><b>
+以上就是这篇文章的主要内容。<br>
+如果你关注AUV控制、MPC、disturbance observer、Diffusion或者learning-based control，这篇文章比较值得注意的一点是：生成模型并不是系统的终点，而只是“预测未来”这一环；真正决定它能不能进入安全控制闭环的，是后面的物理约束、带宽筛选和稳定性分析。<br>
+如果相关内容对你的研究有帮助，也欢迎引用这项工作。
+</b></p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<a href="#blog10">看看上一篇</a><a href="#work">返回目录</a><a href="#blog_occupy">看看下一篇</a>
+</div>
