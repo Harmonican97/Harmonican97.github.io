@@ -11,7 +11,6 @@
 </div>
 
 <span class="image main"><img src="images/blog11/cover.jpg" alt="S2D-MPC论文封面" /></span>
-<!-- 图片占位：建议使用论文第1页标题与摘要区域截图；或将 Fig. 1 裁剪为横向封面。建议保存路径：images/blog11/cover.jpg -->
 
 <p><b>Saturated Precise Robust Singular Spectrum Analysis-Diffusion Model Predictive Control of AUVs</b></p>
 <p><b>文章发表在 IEEE Transactions on Cybernetics，DOI: 10.1109/TCYB.2026.3731311</b></p>
@@ -43,7 +42,6 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 </b></p>
 
 <span class="image main"><img src="images/blog11/framework.png" alt="S2D-MPC闭环预测补偿架构" /></span>
-<!-- 图片占位：使用论文 Fig. 1：Closed-loop perception-prediction-decision-action architecture for AUV path following（论文第4页）。建议保存路径：images/blog11/framework.png -->
 
 <p><b>
 在正式讲算法之前，先看看文章到底在模拟什么扰动。AUV的总外扰被拆成两部分：
@@ -58,7 +56,6 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 <p><b>现在先看 S2D Observer。它实际上分成五步，论文 Fig. 2 把整条信息流画得很清楚。</b></p>
 
 <span class="image main"><img src="images/blog11/s2d_observer.png" alt="S2D预测观测器信息流" /></span>
-<!-- 图片占位：使用论文 Fig. 2：Information flow through the proposed S2D predictive observer（论文第4页）。建议保存路径：images/blog11/s2d_observer.png -->
 
 <p><b>
 第一步还是很经典：Kalman Filter先给出 instantaneous disturbance estimate。文章把未知扰动扩展进状态向量，并在局部线性化模型里把它近似成采样间隔内的随机游走。KF每次根据状态预测和实际测量之间的innovation，更新当前扰动估计。<br>
@@ -81,7 +78,6 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 </b></p>
 
 <span class="image main"><img src="images/blog11/skip_diffusion.png" alt="SSA引导的跳步扩散采样" /></span>
-<!-- 图片占位：使用论文 Fig. 3：SSA-guided skip-step diffusion sampling for residual prediction（论文第5页）。建议保存路径：images/blog11/skip_diffusion.png -->
 
 <p><b>
 普通扩散反演的问题大家都知道：一步一步从 \(x_T\) 走回 \(x_0\)，效果可以很好，但是控制系统没那么多时间等。于是这里采用 strided reverse schedule，隔几个step跳一次。<br>
@@ -115,7 +111,6 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 </b></p>
 
 <span class="image main"><img src="images/blog11/diaf.png" alt="Dynamics-Informed Adaptive Filter结构" /></span>
-<!-- 图片占位：使用论文 Fig. 4：Schematic of the proposed DIAF（论文第5页）。建议保存路径：images/blog11/diaf.png -->
 
 <p><b>文章先用一个简单但很直观的系统时间常数来描述AUV的响应能力：</b></p>
 <p style="text-align:center;"><b>\(T_{\mathrm{sys}}=\dfrac{m_{\mathrm{eff}}}{d_{\mathrm{lin}}+\epsilon}\)</b></p>
@@ -163,14 +158,12 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 </b></p>
 
 <span class="image main"><img src="images/blog11/model_params.png" alt="AUV模型参数表" /></span>
-<!-- 表格占位：使用论文 Table I：AUV model parameters（论文第8页）。建议保存路径：images/blog11/model_params.png -->
 
 <p><b>
 对比方法包括 Standard MPC、NDO-MPC、ESO-MPC 和 S2D-MPC。最直观的结果在 Fig. 5：Standard MPC根本没有显式扰动信息，所以误差最大；NDO和ESO能改善，但估计曲线明显滞后于高频JONSWAP扰动；S2D则因为直接给出未来horizon预测，在相位上明显更贴近真实扰动。
 </b></p>
 
 <span class="image main"><img src="images/blog11/error_estimation.png" alt="横向跟踪误差与扰动估计结果" /></span>
-<!-- 图片占位：使用论文 Fig. 5：Cross-track error and disturbance estimation under the high-frequency JONSWAP disturbance d_omega2（论文第8页）。建议保存路径：images/blog11/error_estimation.png -->
 
 <p><b>
 再看一个最简单粗暴的指标：Integrated Absolute Error。S2D-MPC总IAE只有2.09 m·s，是四种方法中最低的。<br>
@@ -178,14 +171,12 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 </b></p>
 
 <span class="image main"><img src="images/blog11/iae.png" alt="不同控制方法的总IAE" /></span>
-<!-- 图片占位：使用论文 Fig. 6：Total integrated absolute error under d_omega2（论文第9页）。建议保存路径：images/blog11/iae.png -->
 
 <p><b>
 轨迹图也能看出类似结论。Standard MPC偏离最明显，NDO/ESO虽然收回来不少，但在高频扰动峰值附近依然存在更大的横向偏移；S2D-MPC整体更贴近参考路径。
 </b></p>
 
 <span class="image main"><img src="images/blog11/trajectory.png" alt="JONSWAP扰动下路径跟踪轨迹" /></span>
-<!-- 图片占位：使用论文 Fig. 7：Path-following trajectories under d_omega2，包含局部放大图（论文第9页）。建议保存路径：images/blog11/trajectory.png -->
 
 <p><b>
 然后是一个控制+生成模型工作绕不开的问题：实时性能不能跑？<br>
@@ -198,7 +189,6 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 </b></p>
 
 <span class="image main"><img src="images/blog11/runtime_table.png" alt="各模块每控制步计算时间" /></span>
-<!-- 表格占位：使用论文 Table II：Computation time per control step（论文第9页）。建议保存路径：images/blog11/runtime_table.png -->
 
 <p><b>
 再来看参数敏感性。论文同时扫了SSA窗口长度 \(L\) 和diffusion skip factor \(k\)。9种组合的IAE只在2.061–2.109 m·s之间变化，说明控制效果对这几个参数没有特别敏感。<br>
@@ -206,7 +196,6 @@ S2D负责“提前预测海浪会怎么推我”，DIAF负责“筛掉我根本�
 </b></p>
 
 <span class="image main"><img src="images/blog11/sensitivity_table.png" alt="SSA窗口长度和扩散跳步因子敏感性" /></span>
-<!-- 表格占位：使用论文 Table III：Sensitivity to SSA window length and diffusion skip factor（论文第9页）。建议保存路径：images/blog11/sensitivity_table.png -->
 
 <p><b>
 最后作者又把海况从mild一路推到extreme：mild为 \(H_s=2\) m、\(\omega_p=1.5\) rad/s；harsh为5 m、3.0 rad/s；extreme为8 m、5.0 rad/s。<br>
@@ -214,7 +203,6 @@ Standard MPC始终误差最大；NDO和ESO随着波高和主频上升逐渐恶�
 </b></p>
 
 <span class="image main"><img src="images/blog11/sea_states.png" alt="不同JONSWAP海况下IAE对比" /></span>
-<!-- 图片占位：使用论文 Fig. 8：Total IAE under the three tested JONSWAP sea states（论文第10页）。建议保存路径：images/blog11/sea_states.png -->
 
 <p><b>
 综合来看，这篇工作的重点其实并不只是“用Diffusion预测海浪”。如果只是换一个预测器，然后把输出原封不动塞进MPC，这件事很容易变成纯方法组合。<br>
