@@ -1,0 +1,361 @@
+<style>
+.paper-image-placeholder{display:block;width:100%;box-sizing:border-box;margin:1.5rem 0;padding:2rem 1.25rem;border:2px dashed rgba(120,140,160,.75);border-radius:.5rem;background:rgba(120,140,160,.08);text-align:center;line-height:1.8}
+.paper-image-placeholder code{word-break:break-all}
+.blog-note-box{margin:1.5rem 0;padding:1rem 1.25rem;border-left:4px solid #6f8fa8;background:rgba(111,143,168,.08)}
+</style>
+
+<h2 class="major blog-title-wrap">不平衡感知的AUV故障诊断：统计特征引导，不同专家应对不同程度数据稀缺</h2>
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<a href="#blog11">看看上一篇</a><a href="#work">返回目录</a><a href="#blog_occupy">看看下一篇</a>
+</div>
+
+<span class="image main"><img src="images/blog12/cover.jpeg" alt="IR-ES论文封面" /></span>
+
+
+<p><b>An Imbalance-Aware Monitoring and Diagnosis Framework for Low-Rate Multisensor AUV Telemetry</b></p>
+
+<p><b>文章已被 IEEE Transactions on Instrumentation and Measurement，DOI: 10.1109/TIM.2026.3742054</b></p>
+
+<p><b>
+还是先来谈谈 motivation：AUV 故障诊断里，正常数据比较容易拿到，故障数据却很难收集，这个问题大家已经不陌生了。<br>
+那么，少数类不够，多复制几遍、加个 Focal loss，或者用 GAN 生成一些数据，不就行了吗？<br>
+这篇文章想说的是：方向都可以尝试，但不能把“少了多少”和“到底还剩多少”当成同一件事，更不能指望一种训练方式包打天下。
+</b></p>
+
+<p><b>
+先想象一下，老师平时几乎一直在讲“正常状态”，偶尔才提一次压力测量异常或螺旋桨损伤。<br>
+学生当然更容易记住正常状态。可反过来，如果故障样本就那么几段，把同一段重复播放一百遍，也不等于多见过一百种真实故障。<br>
+这就是不平衡学习的麻烦：既要纠正模型对多数类的偏好，又不能把重复出现的少数类误当成丰富的经验。
+</b></p>
+
+<p><b>
+AUV 这里还多了一层难度：输入不是密集的高频轴承振动，而是推进器指令、深度、压力、电压、姿态和惯性测量等低采样率遥测。本文两个平台都以100 Hz记录数据。<br>
+少数类不仅数量少，单个窗口中能看清的故障信息也有限。文章因此不再把重点放在“生成一整段看起来像真的波形”，而是先把有限信息提取得更充分，再根据不平衡程度决定训练时要不要加强少数类表示。
+</b></p>
+
+<p><b>
+方法叫 IR-ES，全称是 Imbalance Ratio–Driven Expert Selection，也就是不平衡比驱动的专家选择。<br>
+它的骨干网络叫 SCALA-Net：Stat-guided Cross-Attention and Latent Augmentation Network。<br>
+名字虽然长，但分工很清楚：SCALA-Net解决“怎么读懂一个窗口”，IR-ES解决“面对这样一份训练数据，应该采用哪套训练目标”。
+</b></p>
+
+
+<p><b>
+首先定义一下 IR。这里数的不是原始数据有多少行，也不是海试做了多少次，而是每个类别实际进入训练的窗口数：
+</b></p>
+
+<p style="text-align:center;"><b>\(\mathrm{IR}=\frac{\max_c n_c}{\min_c n_c}\)</b></p>
+
+<p><b>
+接下来准备两个专家。Expert A 是代价敏感的判别专家，主要使用带类别权重的 Focal loss；Expert B 是严重不平衡增强专家，在同一骨干上再加入监督对比学习、类条件潜空间增强和统计原型一致性。<br>
+默认阈值为15：IR小于15选A，IR大于或等于15选B。因此主实验中，IR=2、5、10走A，IR=20走B。
+</b></p>
+
+<p style="text-align:center;"><b>\(\operatorname{Expert}(\mathcal D)=\begin{cases}\operatorname{Expert\ A},&amp;\mathrm{IR}&lt;T_{\mathrm{IR}},\\\operatorname{Expert\ B},&amp;\mathrm{IR}\geq T_{\mathrm{IR}},\end{cases}\qquad T_{\mathrm{IR}}=15\)</b></p>
+
+
+<div class="blog-note-box"><b>
+这里的“专家选择”不是每来一个测试样本就动态路由一次，也不是两个模型在线投票。<br>
+选择在训练／校准阶段根据已标注数据的类别数量完成；部署时固定一个专家，只运行一套 SCALA-Net。测试标签和测试集类别分布都不参与选择。
+</b></div>
+
+
+<span class="image main"><img src="images/blog12/framework.png" alt="训练／校准与单网络推理流程" /></span>
+
+<p><b>
+先把专家选择放一边，来看 SCALA-Net 到底怎么提特征。<br>
+文章用了两路输入：一路是同一时间窗的统计描述，另一路是原始多通道时序。统计描述像是先看一份摘要，原始时序像是再翻完整记录。<br>
+摘要能迅速告诉你“这一段整体有什么特点”，完整记录则保留“异常究竟发生在什么时候”。两者不是替代关系。
+</b></p>
+
+<span class="image main"><img src="images/blog12/scala_backbone.png" alt="SCALA-Net双流骨干网络" /></span>
+
+<p><b>
+统计分支叫 FAN，Feature Attention Network。每个通道提取13个描述量，包括极值、均值、中位数、峰峰值、标准差、偏度、峰度、RMS、直方图熵和波峰因子等，16个通道合起来就是208维。<br>
+FAN先做归一化，再用类似 squeeze-and-excitation 的特征门控调整各维权重，随后经过6个残差MLP块，得到统计嵌入。<br>
+所以这里不是“手工特征算完直接喂分类器”，而是让网络继续学习：哪些统计量在当前诊断任务里更值得关注。
+</b></p>
+
+<span class="image main"><img src="images/blog12/stat_features.png" alt="每个遥测通道的13项统计特征" /></span>
+
+<p><b>
+原始信号分支叫 MSAE，Multi-Scale Self-Attention Encoder。<br>
+它先用5、11、23等不同卷积核提取多尺度时间特征，再通过CBAM1D关注重要通道和时间位置；之后把特征池化成固定数量的token，交给Transformer建模较长距离的联系。<br>
+默认是48个token、128维潜在表示和4个注意力头。可以把它理解成：卷积先找局部线索，注意力再把这些线索串起来。
+</b></p>
+
+<p><b>
+真正把两路接起来的是 SGCA，Stat-Guided Cross-Attention。<br>
+普通拼接是“统计特征一份，原始特征一份，全扔给后面自己看”；SGCA则让统计嵌入充当Query，原始时序token充当Key和Value。<br>
+也就是说，摘要先提出问题，再到完整记录里找与这个问题有关的片段。
+</b></p>
+
+<p style="text-align:center;"><b>\(\mathbf q=\operatorname{LN}_q(\mathbf z_{\mathrm{stat}}),\qquad\mathbf K=\operatorname{LN}_{kv}(\mathbf H^{\prime}),\qquad\mathbf V=\operatorname{LN}_{kv}(\mathbf H^{\prime})\)</b></p>
+
+<p><b>
+最后，统计嵌入、交叉注意力汇聚结果和原始分支的全局嵌入一起进入GLU门控融合，再输出类别。<br>
+因此SCALA-Net不是让统计量把原始信号替掉，而是让统计量帮助原始分支“找重点”，同时保留原始分支自己的判断。
+</b></p>
+
+
+<p><b>
+接下来才是“两套训练方式”的区别。<br>
+Expert A的思路很直接：先把判别做好。类别权重补偿少数类，Focal项降低容易样本在损失里的占比，避免训练一直被大量容易识别的样本牵着走。<br>
+当少数类还保留一定多样性时，不一定需要再压上很多额外约束。文章的A专家只优化 Focal loss。
+</b></p>
+
+<p><b>
+Expert B面对的情况则更极端：故障样本已经少到很难形成稳定边界。<br>
+这时候文章加了三件事。第一件是监督对比学习，让同类表示更接近、不同类更分开。<br>
+但如果一个mini-batch里某个样本根本找不到同类正样本，就把它从这项损失的锚点平均中跳过。这个细节看起来小，却正是严重不平衡训练里可能遇到的情况。
+</b></p>
+
+<p><b>
+第二件是 SCCA，Stochastic Class-Conditional Augmentation。注意，这里的SCCA指的是随机类条件增强，不是前面的交叉注意力SGCA。<br>
+它在训练过程中维护每一类潜在特征的EMA均值和对角方差，然后围绕对应类别的统计位置采样：
+</b></p>
+
+<p style="text-align:center;"><b>\(\mathbf z_{\mathrm{aug}}=\boldsymbol\mu_y+\boldsymbol\epsilon\odot(\rho_y\boldsymbol\sigma_y),\qquad\boldsymbol\epsilon\sim\mathcal N(\mathbf0,\mathbf I)\)</b></p>
+
+<p><b>
+这和GAN生成原始波形不是一回事。这里生成的是“给分类器看的潜在表示”，不是一段新的推进器、深度或姿态测量。<br>
+文中所有类别的增强尺度都固定为ρ=1.0，EMA动量为0.99，并没有另外设计“类别越少，采样半径就自动越大”的规则。<br>
+增强表示仍然经过同一个分类头，用对应类别的Focal损失约束其判别结果。
+</b></p>
+
+<p><b>
+第三件是统计原型一致性。因为潜空间里采样也可能跑偏，文章加了一个轻量解码器，把增强表示映射回208维统计特征空间，再检查它与该类统计原型的偏离程度。<br>
+直观地说：你可以在“这类故障附近”扩展一些训练表示，但不能扩展到统计特征都不像这一类的地方。<br>
+这里约束的是统计描述的一致性，不是重建完整遥测波形，也不能直接当成完整水动力学一致性的证明。
+</b></p>
+
+<p style="text-align:center;"><b>\(\mathcal L_B=\mathcal L_{\mathrm{focal}}+\alpha\mathcal L_{\mathrm{supcon}}+\lambda\mathcal L_{\mathrm{aug}}+\beta\mathcal L_{\mathrm{stat}}\)</b></p>
+
+<p><b>
+默认α=0.2、λ=0.5、β=0.05。它们分别控制对比约束、增强分类和统计一致性的权重。<br>
+训练时复杂一些，推理时却不用把这些辅助损失和解码器一起带上艇。两个专家的差别在训练目标与训练得到的参数，而不是部署时多出两条分支。
+</b></p>
+
+<p><b>
+有了方法，再看看数据到底是什么。<br>
+Haizhe来自约1.5 m水深的水池实验，主要包含上浮、下潜和定深悬停；BlueROV来自约2.5 m水深的湖试，除这些动作外还有半径1 m的圆形路径巡航。<br>
+两者都是100 Hz、16通道遥测。论文Fig. 3还画出了艇端采集、通信与岸端诊断的关系。
+</b></p>
+
+<span class="image main"><img src="images/blog12/platform.png" alt="实验平台与艇端／岸端诊断链路" /></span>
+
+<p><b>
+本文定义五个类别：正常N、负载增加AD、压力计深度测量故障PG，以及轻微和严重螺旋桨损伤PDS/PDB。<br>
+具体设置也给得很清楚：Haizhe增加0.5 kg载荷，BlueROV增加1.5 kg；PG是压力换算深度的20%正偏差，例如真实1.0 m、测得1.2 m；PDS和PDB分别对应20%与50%的推进推力损失。<br>
+这些是本文自己的故障定义，后面的结果都应放在这组固定幅度设置下理解。
+</b></p>
+
+<span class="image main"><img src="images/blog12/fault_definition.png" alt="五种运行状态及量化故障设置" /></span>
+
+<p><b>
+窗口怎么切，同样不能含糊。默认长度T=200、重叠O=20，所以stride是180个采样点，不是20。<br>
+按100 Hz换算，一个窗口包含约2 s的数据，相邻窗口起点相隔1.8 s。每个窗口对应200×16的原始矩阵，以及从同一窗口计算的208维统计向量。<br>
+主实验先分开训练源记录文件和指定测试文件，再分别切窗；归一化只用训练窗口估计。不平衡只加在训练池，测试文件保持不变。
+</b></p>
+
+<span class="image main"><img src="images/blog12/split_protocol.png" alt="先划分文件、再切窗的评估协议" /></span>
+
+<p><b>
+这里还有两个很容易被误读的细节。<br>
+第一，主协议不预留验证集，而是提前冻结设置，每次固定训练100轮，不拿最终测试表现挑checkpoint。第二，重复10次指的是计算实验的随机种子与训练窗口选择变化，不是重新做了10轮实艇故障注入。<br>
+尤其BlueROV原始采集只有5次路径跟踪任务，每个工况一次。再多的窗口，也不能自动变成更多次独立物理任务。
+</b></p>
+
+<p><b>
+然后看“不平衡”究竟有多严重。主实验采用 keep-majority：固定正常类预算，再减少每一个故障类的训练窗口。<br>
+以Haizhe为例，正常类固定163个；名义IR=2时每个故障类81个，IR=10时16个，IR=20时只剩8个。到了IR=30、50，每类分别只有5个和3个。<br>
+所以这不是单纯把比例调一调：IR越高，少数类绝对数量和整个训练集规模也同时在下降。
+</b></p>
+
+<span class="image main"><img src="images/blog12/training_budgets.png" alt="主实验训练预算与固定测试集" /></span>
+
+<div class="blog-note-box"><b>
+“比例不平衡”和“总共就没几条数据”是两个不同问题。<br>
+在本文主实验里，两者一起变化，所以IR是一个方便的训练条件指标，却不是已经排除了样本量影响的因果变量。这个区别，到后面的BlueROV补充实验会变得非常关键。
+</b></div>
+
+<p><b>
+接下来看看结果。先盯住主要指标：Macro-F1，而不是把所有小数都当成Accuracy。<br>
+Macro-F1先分别计算各类F1，再给每一类相同权重。对于本文想解决的少数类识别，这比只看一个总体准确率更贴近问题。
+</b></p>
+
+<p><b>
+主实验Table IX中，Haizhe在IR=2、5、10、20下的Macro-F1依次为0.9755、0.9225、0.8922、0.8190；BlueROV则为0.9312、0.8851、0.8384、0.7694。<br>
+这些是10次运行的均值，标准差也列在原表中。结果不是“不平衡再严重都没事”，而是随着训练故障窗口越来越少，两平台都退化，只是框架仍然保留了一定诊断能力。
+</b></p>
+
+<span class="image main"><img src="images/blog12/main_results.png" alt="两平台在不同IR下的Macro-F1" /></span>
+
+<p><b>
+混淆矩阵和t-SNE说明了难点在哪里。IR=2时类别分离较清楚；不平衡加重以后，PDS和PDB这两种动力学响应相近的损伤等级更容易混淆，部分故障也开始与正常状态混在一起。<br>
+这比只看平均数更有信息量：模型不是每一类都均匀退步，而是更容易在本来就相似的故障边界上失守。这里用可视化说明现象，精确性能仍以原文表格为准。
+</b></p>
+
+<span class="image main"><img src="images/blog12/confusion_tsne.png" alt="四种不平衡水平的混淆矩阵与t-SNE" /></span>
+
+<p><b>
+再跟其他方法比较。Table X先比较GASEL、IPORF、SeqCNN，以及GAN、VAE和WGAN-GP等生成增强方案。<br>
+注意这张表报的是Accuracy。在Haizhe的IR=20下，IR-ES为0.8201，SeqCNN为0.4679，所比较的三种生成方案处于0.1788–0.3726之间。<br>
+这些结果支持的是：在本文低速率遥测和具体数据构造下，所测试的生成方案并没有解决严重缺样问题。它不等于“GAN对所有AUV数据都没有用”。
+</b></p>
+
+<span class="image main"><img src="images/blog12/general_baselines.png" alt="AUV诊断与生成增强基线对比" /></span>
+
+<p><b>
+不过，只赢这些基线还不够。真正值得对照的是那些专门处理不平衡的强方法：Weighted-CE、Focal、平衡批采样BBS、加权随机采样WRS，以及TS2Vec和token mask modeling。<br>
+Table XI采用“Macro-F1（Accuracy）”格式。Haizhe的IR=20下，IR-ES的Macro-F1为0.8190，最强基线Focal为0.7878，差值就是摘要中的3.12个百分点。
+</b></p>
+
+<p><b>
+但也别只挑最好看的那一列。IR=5时，Focal是0.9239，略高于IR-ES的0.9225；IR=10时，两者都是0.8922。<br>
+所以更准确的结论是：在这套主实验里，中度不平衡下Focal已经很强，严重不平衡时增强专家体现出额外收益。不是每个IR都必须把所有辅助损失打开。<br>
+Fig. 5给出了10次运行的误差条，但误差条本身不应被当成独立的显著性检验结论。
+</b></p>
+
+<span class="image main"><img src="images/blog12/strong_baselines.png" alt="Haizhe强不平衡基线比较" /></span>
+
+<span class="image main"><img src="images/blog12/baseline_errorbars.png" alt="10次运行的误差条比较" /></span>
+
+<p><b>
+接下来是消融实验，不过这里一定要先讲清楚实验角色。<br>
+Table XII和Table XIII是在IR=10时“强制使用Expert B”，再把三个辅助损失逐一去掉。它们是在检查B内部的机制，不是说主选择器在IR=10也使用B。主选择器依然选A。<br>
+Full forced-B与主结果在显示精度下碰巧都是0.8922，也不能据此把两种实验混成一种。
+</b></p>
+
+<p><b>
+在这个强制B的受控设置里，完整模型Macro-F1为0.8922；去掉SupCon降到0.8468，去掉潜空间增强降到0.8149，去掉统计一致性降到0.8561。<br>
+潜空间增强的移除对应最大下降，说明它在这组设置中贡献较大；另外两项也提供了补充约束。<br>
+不过，这些数字描述的是IR=10下对B的机制诊断，不能直接当成IR=20的消融结果。
+</b></p>
+
+<span class="image main"><img src="images/blog12/expert_b_ablation.png" alt="强制Expert B的辅助损失消融" /></span>
+
+<p><b>
+超参数分析也延续同一逻辑：仍然强制B，分别改变α、λ和β。<br>
+原表显示默认权重附近表现较好，权重过大时也可能退步，所以“加约束”并不意味着“约束越强越好”。Table XII的去除项与Table XIII对应的零权重行使用同一组10次运行，不能当成两套独立重复证据。<br>
+这些扫描是事后敏感性分析，不是用测试表现重新挑选主实验参数。
+</b></p>
+
+<span class="image main"><img src="images/blog12/loss_sensitivity.png" alt="Expert B三项权重的事后敏感性" /></span>
+
+<p><b>
+窗口长短会不会影响结果？会。Fig. 6里，窗口从20增加到200个采样点，诊断Accuracy整体上升，IR=20时更长上下文的收益更明显。<br>
+按100 Hz换算，这是从约0.2 s增加到约2 s的观测范围。短窗口更新起来灵活，但统计量和动态过程都看得更少；长窗口信息更充分，却也需要更长的观测片段。<br>
+论文这里测的是窗口级分类表现，并没有直接给出真实故障出现到报警的端到端延迟。
+</b></p>
+
+<span class="image main"><img src="images/blog12/window_sensitivity.png" alt="窗口长度敏感性" /></span>
+
+<p><b>
+收敛曲线则给出了另一个角度：Fig. 7中，严重不平衡通常收敛更慢、最终表现更低；在IR=20下，完整组合比focal-only和SCCA-only更有优势。<br>
+它说明联合目标在所展示的训练过程中能够工作，但这里的“收敛稳定”是优化表现的描述，不是控制理论里的闭环稳定性证明，也不是设备运行可靠性的认证。
+</b></p>
+
+<span class="image main"><img src="images/blog12/convergence.png" alt="跨数据集及对照配置的收敛行为" /></span>
+
+<p><b>
+再来看阈值15到底意味着什么。论文是把预先设定的中度区间“到IR=10”和严重区间“从IR=20起”取中点，得到15，并在主实验中固定。<br>
+Fig. 8把名义IR推到30和50，扫不同选择阈值。只要阈值还没有超过实际IR，选的都是B，性能自然形成平台；跨过去改选A后，表现才发生阶梯式变化。<br>
+因此这张图说明的是“专家没变，输出就不会因为阈值小幅变化而变”，不能把平坦曲线理解成已经找到了普适最优阈值。
+</b></p>
+
+<p><b>
+还有一个整数取整细节：Haizhe在名义IR=30时，正常类163个、每个故障类5个，实际比例是32.6，而不是恰好30。<br>
+阈值切换要看这种实际比例。Fig. 8的极端不平衡实验重复5个随机种子，也不是前面主表的10次。
+</b></p>
+
+<span class="image main"><img src="images/blog12/threshold_sensitivity.png" alt="极端不平衡下的专家阈值敏感性" /></span>
+
+<p><b>
+到这里似乎已经能讲一个完整故事了：先数IR，再选择专家，严重不平衡就加强表示。<br>
+但论文后面的BlueROV补充实验很重要，因为它进一步问：表现下降，到底是“比例更歪”，还是“样本更少”？以及，B真的总该在高IR时上场吗？
+</b></p>
+
+<p><b>
+这部分首先重新界定了评估单位。由于保留的原始档案没有保存主表Table IX那一套精确的指定文件划分，补充实验按时间戳回退或较大跳变切分记录，剔除过短片段，再把16通道片段重采样为200点。<br>
+最终得到880个不重叠时间戳片段，固定分成614个训练池片段和266个测试片段。它们仍然来自原来的5次物理任务，并不是880次独立海试。<br>
+因此，补充表与主表必须分别阅读，不能拿一个表的数值去替换另一个表，也不能直接把两者相减当成同协议性能变化。
+</b></p>
+
+<span class="image main"><img src="images/blog12/supplement_counts.png" alt="补充BlueROV时间戳片段统计" /></span>
+
+<p><b>
+在这套补充协议里，Weighted-CE、Focal、BBS和WRS使用同一个SCALA-Net骨干。IR=2、5、10时，IR-ES选A，与Focal实现和结果完全一致。<br>
+到了IR=20，IR-ES的Macro-F1为0.7307±0.0406，Focal为0.7249±0.0269。均值上IR-ES略高，但配对差值只有0.0058±0.0491。<br>
+这个差值相对于种子间波动很小，所以论文支持的是“BlueROV上有竞争力”，而不是已经证明稳定、显著地优于Focal。
+</b></p>
+
+<span class="image main"><img src="images/blog12/supplement_baselines.png" alt="BlueROV补充协议的强基线比较" /></span>
+
+<p><b>
+真正能改变理解的是Table XVI。第一组实验把总预算固定为120，再把IR从2逐步增到20。Expert A的Macro-F1从0.8679降到0.7249，B从0.8864降到0.7307。<br>
+也就是说，即使总样本量不变，类别分配越来越不均衡，性能仍然会下降。<br>
+第二组反过来固定IR=20，把预算从72增加到120，A从0.6360升到0.7249，B从0.5957升到0.7307：比例一样，绝对样本量也会影响结果。
+</b></p>
+
+<p><b>
+更关键的是，预算72、IR=20时，B反而低于A；而在总预算120、IR=2时，B的均值又高于A。<br>
+所以“低IR一定选A、高IR一定选B”不是一个跨预算、跨平台都成立的规律。当前阈值是本文特定数据构造下的启发式选择规则，不是普适的因果分界线。<br>
+这并不抹掉主实验的收益，却把方法的适用边界说清楚了：迁移到标注预算明显不同的新任务，不能只照抄数字15。
+</b></p>
+
+<span class="image main"><img src="images/blog12/ratio_budget_control.png" alt="将类别比例与绝对样本量分开控制" /></span>
+
+<p><b>
+最后还有一个常被准确率掩盖的问题：模型给出的“信心”可靠吗？<br>
+补充实验不仅报Macro-F1，也报ECE、NLL和Brier score。ECE从IR=2时的0.0214增大到IR=20时的0.2389，另外两项也明显变差。<br>
+这表示严重缺样时，分类输出的置信度校准更差。ECE不是“错误率23.89%”，而是对置信度与实际正确程度不匹配的度量，不能混为一谈。
+</b></p>
+
+<div class="blog-note-box"><b>
+“分类表现不错”“不同随机种子下比较稳定”“置信度可靠”“实际任务安全”，是不同层面的判断。<br>
+本文没有据此证明未知故障检测、任务级虚警率、持续报警逻辑或诊断延迟已经得到解决；这些仍然是后续部署验证需要补上的部分。
+</b></div>
+
+<span class="image main"><img src="images/blog12/confidence_calibration.png" alt="补充BlueROV的置信度校准结果" /></span>
+
+<p><b>
+部署开销再看一眼。Table VIII中，真正推理使用的SCALA-Net有1,106,537个参数，FP32模型大小约4.2227 MB，每个样本约2.431M MACs、4.863M FLOPs。<br>
+包含训练专用模块的checkpoint多出86,480个参数，但这些模块不进入公共推理路径。这里省掉的是额外在线分支，不是说增强专家在训练时没有成本。
+</b></p>
+
+<p><b>
+在论文的岸端工作站、batch size=1、输入预加载条件下，部署路径CPU延迟为5.8365±0.4458 ms，GPU为8.2566±1.6732 ms。<br>
+这个设置里GPU并没有更快，所以“用了GPU”不能直接等同于“延迟一定更低”。同样，几毫秒前向计算也不是完整报警延迟：本文默认窗口本身就包含约2 s观测，通信、窗口构造和统计特征计算不能自动算进这个前向计时结果。<br>
+这些测量支持模型推理成本较小，但还不能替代真实艇载功耗、调度和端到端延迟测试。
+</b></p>
+
+<span class="image main"><img src="images/blog12/deployment_cost.png" alt="部署路径与训练checkpoint的计算开销" /></span>
+
+<p><b>
+综合来讲，这篇工作的重点并不只是“统计特征加一个Transformer”，也不只是“再加一种数据增强”。<br>
+它把三个问题连在一起：低采样率遥测该怎么读，少数类表示该怎么补，以及什么时候值得开启更强的增强训练。<br>
+统计特征负责提供整体线索，原始分支保留时间结构，SGCA把两者连接起来；IR-ES则在已经规定的数据预算环境里，为同一个骨干选择不同训练目标。
+</b></p>
+
+<p><b>
+但目前的结论仍然有清楚边界：BlueROV每个工况只有一次物理任务，固定幅度故障也不能代表自然退化、长期漂移或复合故障；补充实验中对Focal的优势不够稳定；严重稀缺时置信度还会恶化。<br>
+因此，比起把它包装成“仅凭IR就能自动解决一切不平衡问题”，更合适的理解是：它给出了一个训练策略随数据条件变化的实现框架，同时用补充实验指出，仅有类别比例这个条件还不够。
+</b></p>
+
+<p><b>
+所以我个人最愿意从这篇文章带走的，不是阈值15，也不是某个漂亮的小数，而是这个提醒：<br>
+面对少数类，先问“比例有多不均衡”，再问“每一类究竟还剩多少有效样本”，最后才决定要加权、重采样，还是加强潜空间表示。<br>
+这也对应论文提出的后续方向：更独立的重复任务记录、结合标注预算的专家选择、置信度校准，以及在线适应和嵌入式验证。
+</b></p>
+
+<p><b>
+以上就是这篇文章的主要内容。<br>
+它讨论的是低采样率、多传感器、少故障标注条件下的诊断训练，而不是把训练复杂性全部搬到在线系统里。方法是否值得用，要看当前数据预算、需要区分的故障和实际部署约束。<br>
+对完整公式、训练设置和实验口径感兴趣，可以按文中的图表编号回到原文查看；相关内容对研究有帮助，也欢迎引用这项工作。
+</b></p>
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<a href="#blog11">看看上一篇</a><a href="#work">返回目录</a><a href="#blog_occupy">看看下一篇</a>
+</div>
